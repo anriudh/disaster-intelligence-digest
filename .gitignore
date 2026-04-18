@@ -1,0 +1,23 @@
+# Local project docs
+GEMINI.md
+PRD.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Database and Models
+*.db
+*.pkl
+
+# Node/React
+node_modules/
+.env.local
+dist/
+
+# System files
+.DS_Store
+Thumbs.db
