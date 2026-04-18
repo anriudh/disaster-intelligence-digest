@@ -18,3 +18,4 @@ pytest-asyncio
 pandas
 numpy
 scikit-learn
+lxml_html_clean
