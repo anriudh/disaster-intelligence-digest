@@ -49,14 +49,10 @@ async def fetch_eonet_events(limit=100):
 
 def get_gdacs_events():
     client = GDACSAPIReader()
-    # Pull last 30 days for live enrichment
-    # Note: gdacs-api might have different methods, let's assume a generic fetch for now
-    # based on the GEMINI.md hint "Use gdacs-api library for structured access"
-    # Actual implementation might need to check the library docs.
-    # Looking at common patterns for this library:
     try:
         events = client.latest_events()
-        return events
+        # gdacs-api 2.0.0 returns a GeoJSON object with a .features list of dicts
+        return events.features if hasattr(events, 'features') else []
     except Exception as e:
         print(f"Error fetching GDACS events: {e}")
         return []
@@ -71,23 +67,37 @@ def match_events(eonet_event, gdacs_events):
     eonet_geo = eonet_event["geometry"][0]
     eonet_lat = eonet_geo["coordinates"][1]
     eonet_lon = eonet_geo["coordinates"][0]
-    eonet_date = datetime.fromisoformat(eonet_geo["date"].replace("Z", "+00:00"))
+    eonet_date_str = eonet_geo["date"].replace("Z", "+00:00")
+    try:
+        eonet_date = datetime.fromisoformat(eonet_date_str)
+    except ValueError:
+        # Handle cases where EONET might return a different format
+        eonet_date = datetime.strptime(eonet_date_str[:19], "%Y-%m-%dT%H:%M:%S")
     
     for g_event in gdacs_events:
+        props = g_event.get("properties", {})
         # Check type
-        if g_event.eventtype != gdacs_type:
+        if props.get("eventtype") != gdacs_type:
             continue
             
         # Check distance
-        g_lat = float(g_event.totallat)
-        g_lon = float(g_event.totallon)
+        geom = g_event.get("geometry", {})
+        coords = geom.get("coordinates", [0, 0])
+        g_lon, g_lat = coords[0], coords[1]
         distance = haversine(eonet_lat, eonet_lon, g_lat, g_lon)
         
         if distance > 100:
             continue
             
         # Check date overlap (within 3 days)
-        g_date = datetime.fromisoformat(g_event.fromdate.replace("Z", "+00:00"))
+        g_date_str = props.get("fromdate", "").replace("Z", "+00:00")
+        if not g_date_str:
+            continue
+        try:
+            g_date = datetime.fromisoformat(g_date_str)
+        except ValueError:
+            g_date = datetime.strptime(g_date_str[:19], "%Y-%m-%dT%H:%M:%S")
+            
         if abs((eonet_date - g_date).days) <= 3:
             return g_event
             
