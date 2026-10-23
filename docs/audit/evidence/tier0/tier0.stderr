@@ -1,0 +1,60 @@
+ERROR:backend.app.pipeline.nlp:Failed to load spaCy model: spacy.load is blocked in Tier 0
+ERROR:backend.app.pipeline.nlp:Failed to load KeyBERT model: KeyBERT is blocked in Tier 0
+ERROR:backend.app.pipeline.embeddings:Failed to load sentence-transformer model: SentenceTransformer is blocked in Tier 0
+INFO:backend.app.pipeline.orchestrator:Starting pipeline run...
+INFO:backend.app.pipeline.orchestrator:Ingested 1 events.
+INFO:backend.app.pipeline.orchestrator:Processing event: E1 - Event E1
+INFO:backend.app.pipeline.orchestrator:Pipeline run completed successfully.
+INFO:backend.app.pipeline.orchestrator:Starting pipeline run...
+INFO:backend.app.pipeline.orchestrator:Ingested 1 events.
+INFO:backend.app.pipeline.orchestrator:Pipeline run completed successfully.
+INFO:backend.app.pipeline.orchestrator:Starting pipeline run...
+INFO:backend.app.pipeline.orchestrator:Ingested 1 events.
+INFO:backend.app.pipeline.orchestrator:Processing event: E2 - Event E2
+INFO:backend.app.pipeline.orchestrator:Pipeline run completed successfully.
+INFO:backend.app.pipeline.orchestrator:Starting pipeline run...
+INFO:backend.app.pipeline.orchestrator:Ingested 0 events.
+INFO:backend.app.pipeline.orchestrator:Pipeline run completed successfully.
+INFO:backend.app.pipeline.orchestrator:Starting pipeline run...
+INFO:backend.app.pipeline.orchestrator:Ingested 1 events.
+INFO:backend.app.pipeline.orchestrator:Pipeline run completed successfully.
+INFO:backend.app.pipeline.orchestrator:Starting pipeline run...
+INFO:backend.app.pipeline.orchestrator:Ingested 1 events.
+INFO:backend.app.pipeline.orchestrator:Processing event: E2 - Event E2
+INFO:backend.app.pipeline.orchestrator:Pipeline run completed successfully.
+INFO:backend.scripts.seed_db:Starting database seeding...
+INFO:backend.scripts.seed_db:Seeding 3 closed events...
+INFO:backend.scripts.seed_db:Seeding completed.
+INFO:backend.app.pipeline.orchestrator:Starting pipeline run...
+INFO:backend.app.pipeline.orchestrator:Ingested 1 events.
+INFO:backend.app.pipeline.orchestrator:Processing event: E3 - Event E3
+INFO:backend.app.pipeline.orchestrator:Pipeline run completed successfully.
+INFO:backend.app.pipeline.orchestrator:Starting pipeline run...
+INFO:backend.app.pipeline.orchestrator:Ingested 3 events.
+INFO:backend.app.pipeline.orchestrator:Processing event: A - Event A
+INFO:backend.app.pipeline.orchestrator:Processing event: B - Event B
+ERROR:backend.app.pipeline.orchestrator:Pipeline run failed: list index out of range
+INFO:backend.app.pipeline.orchestrator:Starting pipeline run...
+INFO:backend.app.pipeline.orchestrator:Ingested 3 events.
+INFO:backend.app.pipeline.orchestrator:Processing event: A - Event A
+INFO:backend.app.pipeline.orchestrator:Processing event: B - Event B
+ERROR:backend.app.pipeline.orchestrator:Pipeline run failed: forced scorer failure
+INFO:backend.app.pipeline.orchestrator:Starting pipeline run...
+INFO:backend.app.pipeline.orchestrator:Ingested 1 events.
+INFO:backend.app.pipeline.orchestrator:Processing event: E5 - Event E5
+INFO:backend.app.pipeline.orchestrator:Pipeline run completed successfully.
+INFO:backend.app.pipeline.orchestrator:Starting pipeline run...
+INFO:backend.app.pipeline.orchestrator:Ingested 1 events.
+INFO:backend.app.pipeline.orchestrator:Processing event: E5 - Event E5
+INFO:backend.app.pipeline.orchestrator:Pipeline run completed successfully.
+ERROR:backend.app.pipeline.gemini:Error generating Gemini digest: Expecting value: line 1 column 1 (char 0)
+ERROR:backend.app.pipeline.gemini:Error generating Gemini digest: API 500
+WARNING:backend.app.pipeline.gemini:Gemini quota exceeded for today. Skipping.
+INFO:backend.app.pipeline.orchestrator:Starting pipeline run...
+INFO:backend.app.pipeline.orchestrator:Ingested 1 events.
+INFO:backend.app.pipeline.orchestrator:Processing event: E8 - Event E8
+INFO:backend.app.pipeline.orchestrator:Starting pipeline run...
+INFO:backend.app.pipeline.orchestrator:Ingested 1 events.
+INFO:backend.app.pipeline.orchestrator:Processing event: E8 - Event E8
+INFO:backend.app.pipeline.orchestrator:Pipeline run completed successfully.
+INFO:backend.app.pipeline.orchestrator:Pipeline run completed successfully.

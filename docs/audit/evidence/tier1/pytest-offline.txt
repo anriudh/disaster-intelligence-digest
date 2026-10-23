@@ -1,0 +1,193 @@
+.FF.....                                                                 [100%]
+=================================== FAILURES ===================================
+___________________________ test_fetch_eonet_events ____________________________
+
+    @contextlib.contextmanager
+    def map_httpcore_exceptions() -> typing.Iterator[None]:
+        global HTTPCORE_EXC_MAP
+        if len(HTTPCORE_EXC_MAP) == 0:
+            HTTPCORE_EXC_MAP = _load_httpcore_exceptions()
+        try:
+>           yield
+
+../venv/lib/python3.13/site-packages/httpx/_transports/default.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../venv/lib/python3.13/site-packages/httpx/_transports/default.py:394: in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../venv/lib/python3.13/site-packages/httpcore/_async/connection_pool.py:256: in handle_async_request
+    raise exc from None
+../venv/lib/python3.13/site-packages/httpcore/_async/connection_pool.py:236: in handle_async_request
+    response = await connection.handle_async_request(
+../venv/lib/python3.13/site-packages/httpcore/_async/connection.py:101: in handle_async_request
+    raise exc
+../venv/lib/python3.13/site-packages/httpcore/_async/connection.py:78: in handle_async_request
+    stream = await self._connect(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../venv/lib/python3.13/site-packages/httpcore/_async/connection.py:124: in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../venv/lib/python3.13/site-packages/httpcore/_backends/auto.py:31: in connect_tcp
+    return await self._backend.connect_tcp(
+../venv/lib/python3.13/site-packages/httpcore/_backends/anyio.py:113: in connect_tcp
+    with map_exceptions(exc_map):
+         ^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.13/contextlib.py:162: in __exit__
+    self.gen.throw(value)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+map = {<class 'TimeoutError'>: <class 'httpcore.ConnectTimeout'>, <class 'OSError'>: <class 'httpcore.ConnectError'>, <class 'anyio.BrokenResourceError'>: <class 'httpcore.ConnectError'>}
+
+    @contextlib.contextmanager
+    def map_exceptions(map: ExceptionMapping) -> typing.Iterator[None]:
+        try:
+            yield
+        except Exception as exc:  # noqa: PIE786
+            for from_exc, to_exc in map.items():
+                if isinstance(exc, from_exc):
+>                   raise to_exc(exc) from exc
+E                   httpcore.ConnectError: [Errno -3] Temporary failure in name resolution
+
+../venv/lib/python3.13/site-packages/httpcore/_exceptions.py:14: ConnectError
+
+The above exception was the direct cause of the following exception:
+
+    @pytest.mark.asyncio
+    async def test_fetch_eonet_events():
+>       events = await fetch_eonet_events(limit=10)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend/tests/test_ingest.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/app/pipeline/ingest.py:37: in fetch_eonet_events
+    response = await client.get(url)
+               ^^^^^^^^^^^^^^^^^^^^^
+../venv/lib/python3.13/site-packages/httpx/_client.py:1768: in get
+    return await self.request(
+../venv/lib/python3.13/site-packages/httpx/_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../venv/lib/python3.13/site-packages/httpx/_client.py:1629: in send
+    response = await self._send_handling_auth(
+../venv/lib/python3.13/site-packages/httpx/_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+../venv/lib/python3.13/site-packages/httpx/_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../venv/lib/python3.13/site-packages/httpx/_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../venv/lib/python3.13/site-packages/httpx/_transports/default.py:393: in handle_async_request
+    with map_httpcore_exceptions():
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.13/contextlib.py:162: in __exit__
+    self.gen.throw(value)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextlib.contextmanager
+    def map_httpcore_exceptions() -> typing.Iterator[None]:
+        global HTTPCORE_EXC_MAP
+        if len(HTTPCORE_EXC_MAP) == 0:
+            HTTPCORE_EXC_MAP = _load_httpcore_exceptions()
+        try:
+            yield
+        except Exception as exc:
+            mapped_exc = None
+    
+            for from_exc, to_exc in HTTPCORE_EXC_MAP.items():
+                if not isinstance(exc, from_exc):
+                    continue
+                # We want to map to the most specific exception we can find.
+                # Eg if `exc` is an `httpcore.ReadTimeout`, we want to map to
+                # `httpx.ReadTimeout`, not just `httpx.TimeoutException`.
+                if mapped_exc is None or issubclass(to_exc, mapped_exc):
+                    mapped_exc = to_exc
+    
+            if mapped_exc is None:  # pragma: no cover
+                raise
+    
+            message = str(exc)
+>           raise mapped_exc(message) from exc
+E           httpx.ConnectError: [Errno -3] Temporary failure in name resolution
+
+../venv/lib/python3.13/site-packages/httpx/_transports/default.py:118: ConnectError
+______________________________ test_match_events _______________________________
+
+    def test_match_events():
+        # Mock EONET event (Wildfire in Arizona)
+        eonet_event = {
+            "id": "EONET_1",
+            "title": "Arizona Fire",
+            "categories": [{"title": "Wildfires"}],
+            "geometry": [{"date": "2024-06-01T12:00:00Z", "coordinates": [-110.0, 32.0]}],
+            "sources": []
+        }
+    
+        # Mock GDACS events
+        # 1. Correct match
+        g1 = MockGDACSEvent("WF", "32.1", "-110.1", "2024-06-01T10:00:00Z")
+        # 2. Wrong type
+        g2 = MockGDACSEvent("EQ", "32.1", "-110.1", "2024-06-01T10:00:00Z")
+        # 3. Too far
+        g3 = MockGDACSEvent("WF", "35.0", "-115.0", "2024-06-01T10:00:00Z")
+        # 4. Too late
+        g4 = MockGDACSEvent("WF", "32.1", "-110.1", "2024-06-10T10:00:00Z")
+    
+>       match = match_events(eonet_event, [g1, g2, g3, g4])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend/tests/test_ingest.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+eonet_event = {'id': 'EONET_1', 'title': 'Arizona Fire', 'categories': [{'title': 'Wildfires'}], 'geometry': [{'date': '2024-06-01T12:00:00Z', 'coordinates': [-110.0, 32.0]}], ...}
+gdacs_events = [<test_ingest.MockGDACSEvent object at 0x7f2f08d15940>, <test_ingest.MockGDACSEvent object at 0x7f2f08bed450>, <test_ingest.MockGDACSEvent object at 0x7f2f08bed1d0>, <test_ingest.MockGDACSEvent object at 0x7f2f08bc55b0>]
+
+    def match_events(eonet_event, gdacs_events):
+        eonet_cat = eonet_event["categories"][0]["title"]
+        gdacs_type = CATEGORY_MAP.get(eonet_cat)
+    
+        if not gdacs_type:
+            return None
+    
+        eonet_geo = eonet_event["geometry"][0]
+        eonet_lat = eonet_geo["coordinates"][1]
+        eonet_lon = eonet_geo["coordinates"][0]
+        eonet_date_str = eonet_geo["date"].replace("Z", "+00:00")
+        try:
+            eonet_date = datetime.fromisoformat(eonet_date_str)
+        except ValueError:
+            # Handle cases where EONET might return a different format
+            eonet_date = datetime.strptime(eonet_date_str[:19], "%Y-%m-%dT%H:%M:%S")
+    
+        for g_event in gdacs_events:
+>           props = g_event.get("properties", {})
+                    ^^^^^^^^^^^
+E           AttributeError: 'MockGDACSEvent' object has no attribute 'get'
+
+backend/app/pipeline/ingest.py:78: AttributeError
+==================================== PASSES ====================================
+________________________ test_fetch_source_text_bad_url ________________________
+------------------------------ Captured log call -------------------------------
+ERROR    backend.app.pipeline.scraper:scraper.py:36 Error scraping http://this-url-does-not-exist.com: Connection Error. Using fallback.
+___________________ test_fetch_source_text_trafilatura_none ____________________
+------------------------------ Captured log call -------------------------------
+WARNING  backend.app.pipeline.scraper:scraper.py:33 Trafilatura returned None for https://example.com. Using fallback.
+============================== slowest durations ===============================
+3.38s call     backend/tests/test_scraper.py::test_fetch_source_text_real_url
+2.29s call     backend/tests/test_scraper.py::test_semaphore_limits_concurrency
+1.85s call     backend/tests/test_scraper.py::test_fetch_source_text_trafilatura_none
+0.16s call     backend/tests/test_ingest.py::test_fetch_eonet_events
+0.03s call     backend/tests/test_scraper.py::test_sleep_jitter_applied
+0.02s call     backend/tests/test_scraper.py::test_fetch_source_text_bad_url
+
+(18 durations < 0.005s hidden.  Use -vv to show these durations.)
+=========================== short test summary info ============================
+PASSED backend/tests/test_ingest.py::test_haversine
+PASSED backend/tests/test_scraper.py::test_fetch_source_text_real_url
+PASSED backend/tests/test_scraper.py::test_fetch_source_text_bad_url
+PASSED backend/tests/test_scraper.py::test_fetch_source_text_trafilatura_none
+PASSED backend/tests/test_scraper.py::test_semaphore_limits_concurrency
+PASSED backend/tests/test_scraper.py::test_sleep_jitter_applied
+FAILED backend/tests/test_ingest.py::test_fetch_eonet_events - httpx.ConnectE...
+FAILED backend/tests/test_ingest.py::test_match_events - AttributeError: 'Moc...
+2 failed, 6 passed in 8.42s

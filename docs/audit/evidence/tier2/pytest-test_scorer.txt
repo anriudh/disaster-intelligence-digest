@@ -1,0 +1,6 @@
+..                                                                       [100%]
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED backend/tests/test_scorer.py::test_model_loading
+PASSED backend/tests/test_scorer.py::test_score_event_keys
+2 passed, 1 deselected in 3.64s

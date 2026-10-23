@@ -1,0 +1,501 @@
+{
+ "versions": {
+  "python": "3.13.16",
+  "numpy": "2.5.4",
+  "pandas": "3.0.6",
+  "scikit-learn": "1.8.0",
+  "xgboost": "3.2.0",
+  "shap": "0.54.1",
+  "joblib": "1.6.0",
+  "scipy": "1.18.1"
+ },
+ "load": {
+  "printed_errors": null,
+  "warnings": [],
+  "model_type": "XGBClassifier",
+  "imputer_type": "SimpleImputer",
+  "explainer_type": "TreeExplainer"
+ },
+ "model": {
+  "classes_": [
+   0,
+   1,
+   2
+  ],
+  "n_classes_": 3,
+  "n_features_in_": 17,
+  "booster_feature_names": [
+   "event_category_encoded",
+   "geometry_type_encoded",
+   "source_count",
+   "event_duration_days",
+   "gdacs_alert_score",
+   "gdacs_population_exposure",
+   "acres_burned",
+   "pct_contained",
+   "wind_speed_mph",
+   "storm_category",
+   "volcano_alert_encoded",
+   "persons_affected",
+   "casualties",
+   "ner_location_count",
+   "ner_org_count",
+   "month",
+   "hemisphere"
+  ],
+  "num_boosted_rounds": 100,
+  "objective": "multi:softprob",
+  "xgboost_version_in_config": [
+   3,
+   2,
+   0
+  ],
+  "params": {
+   "n_estimators": 100,
+   "max_depth": 5,
+   "learning_rate": 0.1,
+   "random_state": 42,
+   "missing": NaN
+  },
+  "accuracy_on_regenerated_synthetic_rows": 1.0
+ },
+ "imputer": {
+  "strategy": "median",
+  "sklearn_version_in_pickle": null,
+  "feature_names_in_": [
+   "event_category_encoded",
+   "geometry_type_encoded",
+   "source_count",
+   "event_duration_days",
+   "gdacs_alert_score",
+   "gdacs_population_exposure",
+   "acres_burned",
+   "pct_contained",
+   "wind_speed_mph",
+   "storm_category",
+   "volcano_alert_encoded",
+   "persons_affected",
+   "casualties",
+   "ner_location_count",
+   "ner_org_count",
+   "month",
+   "hemisphere"
+  ],
+  "statistics_": [
+   2.0,
+   1.0,
+   3.0,
+   14.6245,
+   2.286,
+   7555.0,
+   801.4125,
+   84.5355,
+   34.8603,
+   2.0,
+   1.0,
+   399.5232,
+   0.0,
+   3.0,
+   2.0,
+   6.0,
+   1.0
+  ],
+  "feature_order_matches_scorer": true,
+  "matches_static_decode": true,
+  "equals_synthetic_generator_medians": true,
+  "max_abs_diff_vs_generator": 0.0
+ },
+ "reconstructed": {
+  "label": "RECONSTRUCTED from copied DB fields (not captured from a pipeline execution)",
+  "n_events": 100,
+  "n_distinct_vectors": 2,
+  "distinct_vector_traces": [
+   {
+    "dropped_extra_keys": [
+     "magnitude",
+     "volcano_alert"
+    ],
+    "input_dtypes": {
+     "event_category_encoded": "int64",
+     "geometry_type_encoded": "int64",
+     "source_count": "int64",
+     "gdacs_population_exposure": "int64",
+     "acres_burned": "object",
+     "pct_contained": "object",
+     "wind_speed_mph": "object",
+     "storm_category": "object",
+     "persons_affected": "object",
+     "casualties": "object",
+     "ner_location_count": "int64",
+     "ner_org_count": "int64",
+     "month": "int64",
+     "hemisphere": "int64"
+    },
+    "nan_before_impute": [
+     "acres_burned",
+     "pct_contained",
+     "wind_speed_mph",
+     "storm_category",
+     "volcano_alert_encoded",
+     "persons_affected",
+     "casualties"
+    ],
+    "imputed_vector": {
+     "event_category_encoded": 0.0,
+     "geometry_type_encoded": 0.0,
+     "source_count": 1.0,
+     "event_duration_days": 0.0,
+     "gdacs_alert_score": -1.0,
+     "gdacs_population_exposure": -1.0,
+     "acres_burned": 801.4125,
+     "pct_contained": 84.5355,
+     "wind_speed_mph": 34.8603,
+     "storm_category": 2.0,
+     "volcano_alert_encoded": 1.0,
+     "persons_affected": 399.5232,
+     "casualties": 0.0,
+     "ner_location_count": 0.0,
+     "ner_org_count": 1.0,
+     "month": 4.0,
+     "hemisphere": 0.0
+    },
+    "nonfinite_after_impute": 0,
+    "raw_margins": [
+     4.33607,
+     -3.24916,
+     -3.49266
+    ],
+    "probabilities": [
+     0.999095,
+     0.000507,
+     0.000398
+    ],
+    "argmax": 0,
+    "score_event_result": {
+     "severity_label": "LOW",
+     "severity_score": 0.9990948438644409,
+     "shap_values": {
+      "event_category_encoded": 0.0,
+      "geometry_type_encoded": 0.0,
+      "source_count": 0.0
+     }
+    },
+    "n_events_with_this_vector": 99
+   },
+   {
+    "dropped_extra_keys": [
+     "magnitude",
+     "volcano_alert"
+    ],
+    "input_dtypes": {
+     "event_category_encoded": "int64",
+     "geometry_type_encoded": "int64",
+     "source_count": "int64",
+     "gdacs_population_exposure": "int64",
+     "acres_burned": "object",
+     "pct_contained": "object",
+     "wind_speed_mph": "object",
+     "storm_category": "object",
+     "persons_affected": "object",
+     "casualties": "object",
+     "ner_location_count": "int64",
+     "ner_org_count": "int64",
+     "month": "int64",
+     "hemisphere": "int64"
+    },
+    "nan_before_impute": [
+     "acres_burned",
+     "pct_contained",
+     "wind_speed_mph",
+     "storm_category",
+     "volcano_alert_encoded",
+     "persons_affected",
+     "casualties"
+    ],
+    "imputed_vector": {
+     "event_category_encoded": 1.0,
+     "geometry_type_encoded": 0.0,
+     "source_count": 1.0,
+     "event_duration_days": 0.0,
+     "gdacs_alert_score": -1.0,
+     "gdacs_population_exposure": -1.0,
+     "acres_burned": 801.4125,
+     "pct_contained": 84.5355,
+     "wind_speed_mph": 34.8603,
+     "storm_category": 2.0,
+     "volcano_alert_encoded": 1.0,
+     "persons_affected": 399.5232,
+     "casualties": 0.0,
+     "ner_location_count": 0.0,
+     "ner_org_count": 0.0,
+     "month": 4.0,
+     "hemisphere": 0.0
+    },
+    "nonfinite_after_impute": 0,
+    "raw_margins": [
+     4.33607,
+     -3.24916,
+     -3.49266
+    ],
+    "probabilities": [
+     0.999095,
+     0.000507,
+     0.000398
+    ],
+    "argmax": 0,
+    "score_event_result": {
+     "severity_label": "LOW",
+     "severity_score": 0.9990948438644409,
+     "shap_values": {
+      "event_category_encoded": 0.0,
+      "geometry_type_encoded": 0.0,
+      "source_count": 0.0
+     }
+    },
+    "n_events_with_this_vector": 1
+   }
+  ],
+  "reproduced_labels": {
+   "LOW": 100
+  },
+  "reproduced_scores": [
+   0.9991
+  ],
+  "stored_labels": {
+   "LOW": 100
+  },
+  "stored_scores": [
+   0.9991
+  ],
+  "per_event_label_match": 100,
+  "per_event_score_match_4dp": 100,
+  "per_event_shap_match": 100
+ },
+ "sensitivity_on_reconstructed_vector": {
+  "baseline_reconstructed": {
+   "probabilities": [
+    0.999095,
+    0.000507,
+    0.000398
+   ],
+   "label": "LOW",
+   "score": 0.9991
+  },
+  "gdacs_missing_as_NaN": {
+   "probabilities": [
+    0.999095,
+    0.000507,
+    0.000398
+   ],
+   "label": "LOW",
+   "score": 0.9991
+  },
+  "gdacs_score_2.5_pop_50000": {
+   "probabilities": [
+    0.999058,
+    0.000544,
+    0.000398
+   ],
+   "label": "LOW",
+   "score": 0.9991
+  },
+  "gdacs_score_5_pop_500000": {
+   "probabilities": [
+    0.998665,
+    0.000937,
+    0.000398
+   ],
+   "label": "LOW",
+   "score": 0.9987
+  },
+  "source_count_3": {
+   "probabilities": [
+    0.999095,
+    0.000507,
+    0.000398
+   ],
+   "label": "LOW",
+   "score": 0.9991
+  },
+  "source_count_6": {
+   "probabilities": [
+    0.999095,
+    0.000507,
+    0.000398
+   ],
+   "label": "LOW",
+   "score": 0.9991
+  },
+  "duration_7_days": {
+   "probabilities": [
+    0.999095,
+    0.000507,
+    0.000398
+   ],
+   "label": "LOW",
+   "score": 0.9991
+  },
+  "ner_location_2": {
+   "probabilities": [
+    0.999095,
+    0.000507,
+    0.000398
+   ],
+   "label": "LOW",
+   "score": 0.9991
+  },
+  "persons_affected_3000": {
+   "probabilities": [
+    0.002279,
+    0.996596,
+    0.001125
+   ],
+   "label": "MODERATE",
+   "score": 0.9966
+  },
+  "all_NaN_except_category": {
+   "probabilities": [
+    0.999095,
+    0.000507,
+    0.000398
+   ],
+   "label": "LOW",
+   "score": 0.9991
+  },
+  "combined_in_range_moderate_like": {
+   "probabilities": [
+    0.001759,
+    0.997373,
+    0.000868
+   ],
+   "label": "MODERATE",
+   "score": 0.9974
+  }
+ },
+ "shap": [
+  {
+   "tag": "reconstructed_event_0 (LOW)",
+   "pred_class": 0,
+   "raw_type": "ndarray",
+   "raw_shape": [
+    1,
+    17,
+    3
+   ],
+   "expected_value": [
+    0.91769,
+    0.06027,
+    -0.82078
+   ],
+   "scorer_indexing_sv[pred_class][0]_shape": [
+    3
+   ],
+   "scorer_indexing_values": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scorer_zip_result": {
+    "event_category_encoded": 0.0,
+    "geometry_type_encoded": 0.0,
+    "source_count": 0.0
+   },
+   "correct_values_for_pred_class_top5": {
+    "persons_affected": 3.39248,
+    "casualties": 0.0259,
+    "event_category_encoded": 0.0,
+    "geometry_type_encoded": 0.0,
+    "source_count": 0.0
+   },
+   "feature0_across_classes": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "additivity_max_err": 4.76837158203125e-07,
+   "xgboost_pred_contribs_shape": [
+    1,
+    3,
+    18
+   ],
+   "max_abs_diff_shap_vs_xgboost_contribs": 0.0,
+   "score_event_shap_values": {
+    "event_category_encoded": 0.0,
+    "geometry_type_encoded": 0.0,
+    "source_count": 0.0
+   }
+  },
+  {
+   "tag": "synthetic_training_row_label_1",
+   "pred_class": 1,
+   "raw_type": "ndarray",
+   "raw_shape": [
+    1,
+    17,
+    3
+   ],
+   "expected_value": [
+    0.91769,
+    0.06027,
+    -0.82078
+   ],
+   "scorer_indexing_error": "IndexError: index 1 is out of bounds for axis 0 with size 1",
+   "correct_values_for_pred_class_top5": {
+    "persons_affected": 2.68479,
+    "casualties": 0.88069,
+    "gdacs_population_exposure": -0.30752,
+    "source_count": 0.01193,
+    "event_category_encoded": 0.0
+   },
+   "feature0_across_classes": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "additivity_max_err": 4.76837158203125e-07,
+   "xgboost_pred_contribs_shape": [
+    1,
+    3,
+    18
+   ],
+   "max_abs_diff_shap_vs_xgboost_contribs": 0.0,
+   "score_event_shap_values": {}
+  },
+  {
+   "tag": "synthetic_training_row_label_2",
+   "pred_class": 2,
+   "raw_type": "ndarray",
+   "raw_shape": [
+    1,
+    17,
+    3
+   ],
+   "expected_value": [
+    0.91769,
+    0.06027,
+    -0.82078
+   ],
+   "scorer_indexing_error": "IndexError: index 2 is out of bounds for axis 0 with size 1",
+   "correct_values_for_pred_class_top5": {
+    "casualties": 4.18367,
+    "event_category_encoded": 0.0,
+    "geometry_type_encoded": 0.0,
+    "source_count": 0.0,
+    "event_duration_days": 0.0
+   },
+   "feature0_across_classes": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "additivity_max_err": 1.430511474609375e-06,
+   "xgboost_pred_contribs_shape": [
+    1,
+    3,
+    18
+   ],
+   "max_abs_diff_shap_vs_xgboost_contribs": 0.0,
+   "score_event_shap_values": {}
+  }
+ ]
+}

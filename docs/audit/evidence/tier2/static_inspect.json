@@ -1,0 +1,161 @@
+{
+ "backend/models/imputer.pkl": {
+  "error": "unparseable bytes at 857: at position 158, opcode b'\\x08' unknown",
+  "ops_before": [
+   [
+    "MEMOIZE",
+    null
+   ],
+   [
+    "BINGET",
+    40
+   ],
+   [
+    "SHORT_BINUNICODE",
+    "indicator_"
+   ],
+   [
+    "MEMOIZE",
+    null
+   ],
+   [
+    "NONE",
+    null
+   ],
+   [
+    "SHORT_BINUNICODE",
+    "statistics_"
+   ],
+   [
+    "MEMOIZE",
+    null
+   ],
+   [
+    "BINGET",
+    15
+   ],
+   [
+    "EMPTY_TUPLE",
+    null
+   ],
+   [
+    "NEWOBJ",
+    null
+   ],
+   [
+    "MEMOIZE",
+    null
+   ],
+   [
+    "EMPTY_DICT",
+    null
+   ],
+   [
+    "MEMOIZE",
+    null
+   ],
+   [
+    "MARK",
+    null
+   ],
+   [
+    "BINGET",
+    18
+   ],
+   [
+    "BINGET",
+    21
+   ],
+   [
+    "BINGET",
+    22
+   ],
+   [
+    "BININT1",
+    17
+   ],
+   [
+    "TUPLE1",
+    null
+   ],
+   [
+    "MEMOIZE",
+    null
+   ],
+   [
+    "BINGET",
+    24
+   ],
+   [
+    "BINGET",
+    25
+   ],
+   [
+    "BINGET",
+    26
+   ],
+   [
+    "BINGET",
+    40
+   ],
+   [
+    "BINGET",
+    34
+   ],
+   [
+    "NEWTRUE",
+    null
+   ],
+   [
+    "BINGET",
+    35
+   ],
+   [
+    "BININT1",
+    16
+   ],
+   [
+    "SETITEMS",
+    null
+   ],
+   [
+    "BUILD",
+    null
+   ]
+  ]
+ },
+ "backend/models/severity_model.pkl": {
+  "path": "backend/models/severity_model.pkl",
+  "bytes": 232558,
+  "segments": 1,
+  "globals": [
+   "builtins.bytearray",
+   "xgboost.core.Booster",
+   "xgboost.sklearn.XGBClassifier"
+  ],
+  "suspicious_globals": [],
+  "opcode_counts": {
+   "PROTO": 1,
+   "FRAME": 2,
+   "SHORT_BINUNICODE": 52,
+   "MEMOIZE": 63,
+   "STACK_GLOBAL": 3,
+   "EMPTY_TUPLE": 2,
+   "NEWOBJ": 2,
+   "EMPTY_DICT": 3,
+   "MARK": 1,
+   "BININT1": 5,
+   "NONE": 33,
+   "BINFLOAT": 2,
+   "NEWFALSE": 1,
+   "SETITEM": 2,
+   "BINBYTES": 1,
+   "TUPLE1": 1,
+   "REDUCE": 1,
+   "BUILD": 2,
+   "SETITEMS": 1,
+   "STOP": 1
+  },
+  "raw_numpy_buffers": []
+ }
+}

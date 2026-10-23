@@ -1,0 +1,6 @@
+raw buffer at 1015 padding byte 8 pad bytes ffffffffffffffff data offset 1024 (aligned 16: True )
+statistics_ (static decode, dtype assumed float64): [2.0, 1.0, 3.0, 14.6245, 2.286, 7555.0, 801.4125, 84.5355, 34.8603, 2.0, 1.0, 399.5232, 0.0, 3.0, 2.0, 6.0, 1.0]
+tail bytes: 39
+tail ends with STOP at 38 of 39
+tail strings: ['_sklearn_version', '1.8.0']
+tail object-construction opcodes: ['BUILD']

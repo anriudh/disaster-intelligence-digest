@@ -1,0 +1,45 @@
+{
+ "F4_trafilatura_extract_direct": {
+  "spa_shell": "You need to enable JavaScript to run this app.",
+  "article": "Sawmill Fire\nParagraph 0: the fire has burned 5,000 acres near Flagstaff, Arizona and is 30% contained. Crews from the A...",
+  "empty": null
+ },
+ "F4_scrape_event_sources": {
+  "spa_shell": {
+   "text": "You need to enable JavaScript to run this app.",
+   "source": "https://inciweb.example/x"
+  },
+  "empty": {
+   "text": "Sawmill Fire None",
+   "source": "fallback"
+  }
+ },
+ "F4_trafilatura_version": "2.3.1",
+ "F10_rate_limit_100_GETs_status_counts": {
+  "200": 100
+ },
+ "F10_routes_with_limit_decorators": [],
+ "F10_limiter_route_limits_registered": 0,
+ "F10_limiter_default_limits": [],
+ "F10_trigger_responses": [
+  200,
+  {
+   "message": "Pipeline triggered"
+  },
+  200
+ ],
+ "F10_trigger_peak_concurrent_runs": 2,
+ "F10_trigger_runs_started": 2,
+ "F7_api_events_total": 100,
+ "F7_api_has_digest_true": 100,
+ "F7_api_detail_gemini_digest": null,
+ "F16_detail_payload_bytes": 9502,
+ "F16_detail_embedding_type": "str",
+ "F16_detail_embedding_chars": 8431,
+ "F9_health": {
+  "status": "healthy",
+  "last_pipeline_run": "2026-04-18T23:26:04.579092",
+  "gemini_calls_today": 0
+ },
+ "missing_event_status": 404
+}

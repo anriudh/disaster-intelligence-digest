@@ -1,0 +1,368 @@
+{
+ "T1_geometry_order_and_update_detection": {
+  "ok": true,
+  "input_geometry_dates_ascending": [
+   "2026-04-01T00:00:00Z",
+   "2026-04-05T00:00:00Z"
+  ],
+  "after_run1": {
+   "first_seen": "2026-04-05T00:00:00Z",
+   "last_updated": "2026-04-01T00:00:00Z",
+   "analysed_at": "2026-10-21T18:03:19.812599"
+  },
+  "after_run2_with_newer_point_appended": {
+   "first_seen": "2026-04-05T00:00:00Z",
+   "last_updated": "2026-04-01T00:00:00Z",
+   "analysed_at": "2026-10-21T18:03:19.812599"
+  },
+  "times_scored": 1,
+  "first_seen_is_newest": true,
+  "last_updated_is_oldest": true,
+  "update_skipped": true
+ },
+ "T2_closure_and_seeding": {
+  "ok": true,
+  "status_open_run": "open",
+  "status_after_absent_from_feed": "open",
+  "status_after_closed_same_geometry": "open",
+  "status_after_closed_changed_geometry": "open",
+  "still_listed_by_/api/events": true,
+  "seed_closed_events_fetched": 3,
+  "seed_closed_events_saved": 0,
+  "seed_run_pipeline_calls": 1
+ },
+ "T3_null_digest_and_has_digest": {
+  "ok": true,
+  "raw_gemini_digest": "null",
+  "sqlite_type": "text",
+  "has_digest_in_/api/events": 1,
+  "detail_gemini_digest": null,
+  "verify_pipeline_query_count": 1
+ },
+ "T4_abort_semantics_and_matching_fragility": {
+  "ok": true,
+  "polygon_second": {
+   "run_pipeline_returned": false,
+   "events_saved": [
+    "A"
+   ],
+   "health": {
+    "status": "healthy",
+    "last_pipeline_run": "2026-10-21T18:03:19.870472",
+    "gemini_calls_today": 0
+   }
+  },
+  "scorer_raises_on_second": {
+   "run_pipeline_returned": false,
+   "events_saved": [
+    "A"
+   ],
+   "health": {
+    "status": "healthy",
+    "last_pipeline_run": "2026-10-21T18:03:19.884829",
+    "gemini_calls_today": 0
+   }
+  },
+  "match_polygon_eonet": "IndexError('list index out of range')",
+  "match_naive_gdacs_date": "TypeError(\"can't subtract offset-naive and offset-aware datetimes\")",
+  "match_aware_gdacs_date_matches": true
+ },
+ "T5_stale_nlp_summary": {
+  "ok": true,
+  "run1": {
+   "keyphrases": "[[\"alpha\", 0.9], [\"bravo\", 0.8]]",
+   "nlp_summary": "alpha, bravo"
+  },
+  "run2": {
+   "keyphrases": "[[\"zulu\", 0.9], [\"yankee\", 0.8]]",
+   "nlp_summary": "alpha, bravo"
+  },
+  "nlp_summary_stale": true
+ },
+ "T6_fallback_text_with_null_description": {
+  "ok": true,
+  "result": {
+   "text": "Super Typhoon X None",
+   "source": "fallback"
+  },
+  "contains_literal_None": true
+ },
+ "T7_quota_accounting": {
+  "ok": true,
+  "sequence": [
+   {
+    "returned": null,
+    "api_calls_so_far": 1,
+    "quota_counter": 0
+   },
+   {
+    "returned": null,
+    "api_calls_so_far": 2,
+    "quota_counter": 0
+   },
+   {
+    "returned": {
+     "what_happened": "a"
+    },
+    "api_calls_so_far": 3,
+    "quota_counter": 1
+   }
+  ],
+  "race_at_79": {
+   "api_calls": 1,
+   "final_counter": 80,
+   "results_none": [
+    false,
+    true
+   ]
+  }
+ },
+ "T8_concurrent_pipeline_runs": {
+  "ok": true,
+  "run_results": [
+   true,
+   true
+  ],
+  "gemini_calls_for_one_event": 2,
+  "quota_counter": 2,
+  "events_rows": 1
+ },
+ "T9_existing_tests": {
+  "ok": true,
+  "test_haversine": "passed",
+  "test_match_events": "FAILED: AttributeError(\"'MockGDACSEvent' object has no attribute 'get'\")",
+  "test_gemini_quota_guard": "passed",
+  "db_file_changed": true,
+  "todays_quota_row_before": 37,
+  "todays_quota_row_after": 0,
+  "db_path_used_by_test": "redirected temp copy (test itself uses whatever DB_PATH points at; default is the committed DB)"
+ },
+ "T10_training_vs_inference_features": {
+  "ok": true,
+  "n_training_rows": 1000,
+  "training_label_counts": {
+   "0": 628,
+   "1": 283,
+   "2": 89
+  },
+  "features": {
+   "event_category_encoded": {
+    "train_min": 0.0,
+    "train_max": 4.0,
+    "train_nan_pct": 0.0,
+    "inference_values": [
+     0.0,
+     1.0
+    ],
+    "inference_nan_pct": 0.0,
+    "inference_outside_train_range_pct": 0.0
+   },
+   "geometry_type_encoded": {
+    "train_min": 0.0,
+    "train_max": 1.0,
+    "train_nan_pct": 0.0,
+    "inference_values": [
+     0.0
+    ],
+    "inference_nan_pct": 0.0,
+    "inference_outside_train_range_pct": 0.0
+   },
+   "source_count": {
+    "train_min": 1.0,
+    "train_max": 9.0,
+    "train_nan_pct": 0.0,
+    "inference_values": [
+     1.0
+    ],
+    "inference_nan_pct": 0.0,
+    "inference_outside_train_range_pct": 0.0
+   },
+   "event_duration_days": {
+    "train_min": 0.11,
+    "train_max": 29.95,
+    "train_nan_pct": 0.0,
+    "inference_values": [
+     0.0
+    ],
+    "inference_nan_pct": 0.0,
+    "inference_outside_train_range_pct": 100.0
+   },
+   "gdacs_alert_score": {
+    "train_min": 0.0,
+    "train_max": 6.98,
+    "train_nan_pct": 0.0,
+    "inference_values": [
+     -1.0
+    ],
+    "inference_nan_pct": 0.0,
+    "inference_outside_train_range_pct": 100.0
+   },
+   "gdacs_population_exposure": {
+    "train_min": 9.0,
+    "train_max": 999738.0,
+    "train_nan_pct": 0.0,
+    "inference_values": [
+     -1.0
+    ],
+    "inference_nan_pct": 0.0,
+    "inference_outside_train_range_pct": 100.0
+   },
+   "acres_burned": {
+    "train_min": 0.63,
+    "train_max": 48268.1,
+    "train_nan_pct": 81.8,
+    "inference_values": [],
+    "inference_nan_pct": 100.0,
+    "inference_outside_train_range_pct": null
+   },
+   "pct_contained": {
+    "train_min": 0.12,
+    "train_max": 99.55,
+    "train_nan_pct": 81.8,
+    "inference_values": [],
+    "inference_nan_pct": 100.0,
+    "inference_outside_train_range_pct": null
+   },
+   "wind_speed_mph": {
+    "train_min": 0.15,
+    "train_max": 149.64,
+    "train_nan_pct": 78.7,
+    "inference_values": [],
+    "inference_nan_pct": 100.0,
+    "inference_outside_train_range_pct": null
+   },
+   "storm_category": {
+    "train_min": 1.0,
+    "train_max": 5.0,
+    "train_nan_pct": 78.7,
+    "inference_values": [],
+    "inference_nan_pct": 100.0,
+    "inference_outside_train_range_pct": null
+   },
+   "volcano_alert_encoded": {
+    "train_min": 0.0,
+    "train_max": 3.0,
+    "train_nan_pct": 79.9,
+    "inference_values": [],
+    "inference_nan_pct": 100.0,
+    "inference_outside_train_range_pct": null
+   },
+   "persons_affected": {
+    "train_min": 0.45,
+    "train_max": 19863.94,
+    "train_nan_pct": 0.0,
+    "inference_values": [],
+    "inference_nan_pct": 100.0,
+    "inference_outside_train_range_pct": null
+   },
+   "casualties": {
+    "train_min": 0.0,
+    "train_max": 99.61,
+    "train_nan_pct": 0.0,
+    "inference_values": [],
+    "inference_nan_pct": 100.0,
+    "inference_outside_train_range_pct": null
+   },
+   "ner_location_count": {
+    "train_min": 1.0,
+    "train_max": 4.0,
+    "train_nan_pct": 0.0,
+    "inference_values": [
+     0.0
+    ],
+    "inference_nan_pct": 0.0,
+    "inference_outside_train_range_pct": 100.0
+   },
+   "ner_org_count": {
+    "train_min": 1.0,
+    "train_max": 4.0,
+    "train_nan_pct": 0.0,
+    "inference_values": [
+     0.0,
+     1.0
+    ],
+    "inference_nan_pct": 0.0,
+    "inference_outside_train_range_pct": 1.0
+   },
+   "month": {
+    "train_min": 1.0,
+    "train_max": 12.0,
+    "train_nan_pct": 0.0,
+    "inference_values": [
+     4.0
+    ],
+    "inference_nan_pct": 0.0,
+    "inference_outside_train_range_pct": 0.0
+   },
+   "hemisphere": {
+    "train_min": 0.0,
+    "train_max": 1.0,
+    "train_nan_pct": 0.0,
+    "inference_values": [
+     0.0
+    ],
+    "inference_nan_pct": 0.0,
+    "inference_outside_train_range_pct": 0.0
+   }
+  },
+  "training_labels_when_source_count_eq_1": {
+   "0": 153
+  },
+  "training_labels_when_gdacs_score_lt_2": {
+   "0": 416
+  },
+  "note": "0=GREEN->LOW, 1=ORANGE->MODERATE, 2=RED->HIGH"
+ },
+ "T11_committed_db_evidence": {
+  "ok": true,
+  "events": 100,
+  "status": [
+   [
+    "open",
+    100
+   ]
+  ],
+  "severity": [
+   [
+    "LOW",
+    100,
+    0.9991,
+    0.9991
+   ]
+  ],
+  "distinct_shap_values": [
+   [
+    "{\"event_category_encoded\": 0.0, \"geometry_type_encoded\": 0.0, \"source_count\": 0.0}",
+    100
+   ]
+  ],
+  "gemini_digest": [
+   [
+    "null",
+    100
+   ]
+  ],
+  "raw_text_top": [
+   [
+    "You need to enable JavaScript to run this app.",
+    99
+   ],
+   [
+    "Super Typhoon Sinlaku None",
+    1
+   ]
+  ],
+  "gdacs_rows": 0,
+  "first_seen_after_last_updated": [
+   [
+    "EONET_19481",
+    "2026-04-18T12:00:00Z",
+    "2026-04-09T18:00:00Z"
+   ]
+  ],
+  "last_updated_range": [
+   "2026-04-02T10:05:00Z",
+   "2026-04-15T09:41:00Z"
+  ]
+ }
+}
