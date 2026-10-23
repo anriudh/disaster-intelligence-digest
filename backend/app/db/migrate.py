@@ -54,6 +54,15 @@ def _now():
     return datetime.now(timezone.utc).isoformat()
 
 
+def preserve_original(conn, table, row_id, column, old_value, version):
+    """For backfills: record a value in legacy_values before changing it."""
+    conn.execute(
+        "INSERT INTO legacy_values (table_name, row_id, column_name, old_value, migration_version, recorded_at) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (table, str(row_id), column, old_value, version, _now()),
+    )
+
+
 def _checksum(path):
     with open(path, "rb") as f:
         return hashlib.sha256(f.read()).hexdigest()

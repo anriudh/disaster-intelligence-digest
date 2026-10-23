@@ -8,6 +8,7 @@ These are records of the audit of baseline commit `814f90b`, and of the plans fo
 | `LEDGER.md` | Tier 0–2 validation ledger: each finding confirmed, refuted or inconclusive, with its evidence |
 | `REMEDIATION_PLAN.md` | Workstreams WS1–WS6 and the owner decisions |
 | `IMPLEMENTATION_PLAN.md` | Policies P-1 to P-6, stages A0–A10 and M1–M4, and Tier 3 |
+| `A9_DRY_RUN.md` | What applying the migrations and backfills to the committed DB would change, from a dry run on a copy |
 | `IMPLEMENTATION_PLAN_REVIEW.md` | Amendments A–D to the owner's revised plan, which is the plan in force |
 | `evidence/tier{0,1,2}/` | Raw outputs: tier JSON, pytest logs, pip freezes, integrity hashes |
 | `harness/tier{0,1,2}/` | The scripts used to run the audit checks offline, outside the repository |
@@ -36,5 +37,5 @@ These are records of the audit of baseline commit `814f90b`, and of the plans fo
 | A3 severity withholding (backend) | f4fea7a | done: /events, /events/{id} and /trends serve no severity, score, SHAP or severity_rationale, and add severity_status; values still stored; digests paused unless DIGEST_GENERATION_ENABLED=true. UI part deferred |
 | A6 trigger | ee26444 | done: no token 503, bad token 401, good token 202, 409 during a run, scheduler skips during a manual run, 3/hour trigger (failed attempts count) and 120/min reads give 429, token-protected diagnostics endpoint |
 | A7 isolation and health | 2009cec | done: a bad event is rolled back and counted while the rest are saved; runs recorded in pipeline_runs; /api/health/live without DB; /api/health pending/ok/degraded (25/45 min) with injected clock; polygon and naive-date GDACS matching; quota counts every attempt (3 of 3) |
-| A8 startup and pins | (this commit) | done: README commands work from the repo root; model paths file-relative; sklearn/xgboost/shap pinned; constraints.txt installs cleanly (77 + 9 model tests pass in that venv, network off); dev requirements split; spaCy model in the Render build; health reports model availability |
-| A9 backfills (tested on copies) | | pending |
+| A8 startup and pins | 9f9a804 | done: README commands work from the repo root; model paths file-relative; sklearn/xgboost/shap pinned; constraints.txt installs cleanly (77 + 9 model tests pass in that venv, network off); dev requirements split; spaCy model in the Render build; health reports model availability |
+| A9 backfills (tested on copies) | (this commit) | done on copies only: B1 100, B2 1, B3 100, B4 99+1, B5 0, B6 100 rows; originals in legacy_values; rerun no-op; restore gives the original content; new rows untouched. See A9_DRY_RUN.md. **Applying to the committed DB awaits approval** |
