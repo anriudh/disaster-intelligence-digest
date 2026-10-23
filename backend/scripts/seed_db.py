@@ -4,7 +4,8 @@ import httpx
 from datetime import datetime, timedelta
 from backend.app.pipeline.ingest import CATEGORY_MAP, match_events, get_gdacs_events
 from backend.app.pipeline.orchestrator import run_pipeline
-from backend.app.db.database import execute_schema, get_db
+from backend.app.db.database import get_db
+from backend.app.db.migrate import init_db
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -23,7 +24,7 @@ async def fetch_closed_events(days=90):
 
 async def seed():
     logger.info("Starting database seeding...")
-    execute_schema()
+    init_db()
     
     # We use a modified version of run_pipeline or just call it 
     # since it already handles multiple events. 

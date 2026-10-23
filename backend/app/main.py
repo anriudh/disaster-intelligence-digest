@@ -7,8 +7,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from backend.app.api.routes import router
-from backend.app.db.database import execute_schema
-from backend.app.db.migrate import run_migrations
+from backend.app.db.migrate import init_db
 from backend.app.pipeline.orchestrator import run_pipeline
 from backend.app.pipeline.scorer import load_models
 import logging
@@ -39,8 +38,7 @@ scheduler = AsyncIOScheduler()
 @app.on_event("startup")
 async def startup():
     logger.info("Starting up FastAPI application...")
-    execute_schema()
-    run_migrations()
+    init_db()
     load_models()
     
     # Schedule pipeline to run every 20 minutes

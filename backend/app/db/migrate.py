@@ -200,7 +200,12 @@ def run_migrations(db_path=None, migrations_dir=MIGRATIONS_DIR, backup=True):
         conn.close()
 
 
+def init_db(backup=True):
+    """Create the base schema and apply pending migrations."""
+    database.execute_schema()
+    return run_migrations(backup=backup)
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    database.execute_schema()
-    print(f"Applied migrations: {run_migrations() or 'none pending'}")
+    print(f"Applied migrations: {init_db() or 'none pending'}")
