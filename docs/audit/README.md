@@ -18,7 +18,6 @@ These are records of the audit of baseline commit `814f90b`, and of the plans fo
 - The backend comes first. Frontend changes, including the A3 UI part and a frontend test framework, are deferred.
 - A3 ships with no diagnostic endpoint; it's added in A6. Model tests are marked `model` and run in a venv with sklearn 1.8.0, xgboost 3.2.0 and shap 0.54.1 until A8 pins them.
 - These steps still need the owner's separate approval:
-  - applying A9 to the committed DB;
   - Tier 3 (live network calls);
   - A10;
   - the frontend phase;
@@ -39,3 +38,4 @@ These are records of the audit of baseline commit `814f90b`, and of the plans fo
 | A7 isolation and health | 2009cec | done: a bad event is rolled back and counted while the rest are saved; runs recorded in pipeline_runs; /api/health/live without DB; /api/health pending/ok/degraded (25/45 min) with injected clock; polygon and naive-date GDACS matching; quota counts every attempt (3 of 3) |
 | A8 startup and pins | 9f9a804 | done: README commands work from the repo root; model paths file-relative; sklearn/xgboost/shap pinned; constraints.txt installs cleanly (77 + 9 model tests pass in that venv, network off); dev requirements split; spaCy model in the Render build; health reports model availability |
 | A9 backfills (tested on copies) | (this commit) | done on copies only: B1 100, B2 1, B3 100, B4 99+1, B5 0, B6 100 rows; originals in legacy_values; rerun no-op; restore gives the original content; new rows untouched. See A9_DRY_RUN.md. **Applying to the committed DB awaits approval** |
+| A9 applied to committed DB | (this commit) | done with owner approval: migrations 0001–0011 applied with the runner (verified backup first, network off); integrity ok; row counts unchanged; per-backfill changes match A9_DRY_RUN.md; rerun is a no-op. sha256 0f9df649…a7c5c6 → 1994d536…76c2d. Rollback: restore the pre-A9 file from git (c723444) |

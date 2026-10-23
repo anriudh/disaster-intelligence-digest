@@ -18,7 +18,7 @@ Fix the audited defects in the disaster-intelligence-digest backend (Track A, st
 
 ## Not done
 1. Ask the owner which next step to take. Each of these needs their explicit approval:
-   a. Apply A9 to the committed `backend/data/disaster_intel.db` (backup first; expected changes in `docs/audit/A9_DRY_RUN.md`).
+   a. (done) A9 applied to the committed DB; see docs/audit/README.md.
    b. Tier 3 live checks (`docs/audit/IMPLEMENTATION_PLAN.md` §5: 1 EONET GET, ≤10 source URLs, 1 GDACS call; outputs outside the repo), then A10 (stale-event lookup after 3 unseen runs).
    c. Frontend phase: remove severity UI (Map.jsx, EventDetail.jsx, TrendPanel.jsx), plus a frontend test framework.
    d. Track M (model validation, M1-M4).
@@ -42,7 +42,7 @@ Fix the audited defects in the disaster-intelligence-digest backend (Track A, st
 
 ## Session rules
 - Commits: authored as the owner, no AI attribution or co-author trailers, no AI mentions in the repo.
-- Never modify the committed DB, apply A9, make live network calls or download models without explicit approval.
+- Never modify the committed DB (A9 applied with approval), make live network calls or download models without explicit approval.
 - Push only to `backend-remediation`. No PR unless asked.
 
 ## Load
