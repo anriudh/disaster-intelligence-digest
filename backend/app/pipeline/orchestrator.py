@@ -7,7 +7,7 @@ from backend.app.pipeline.scraper import scrape_event_sources
 from backend.app.pipeline.nlp import run_nlp_pipeline
 from backend.app.pipeline.embeddings import get_embeddings
 from backend.app.pipeline.scorer import score_event
-from backend.app.pipeline.gemini import generate_digest
+from backend.app.pipeline.gemini import generate_digest, digests_enabled
 from backend.app.db.database import get_db
 
 logger = logging.getLogger(__name__)
@@ -76,9 +76,9 @@ async def process_event(cursor, eonet: dict, gdacs, now: str) -> str:
     # 6. Score
     scoring_result = score_event(features)
 
-    # 7. Gemini (MODERATE or HIGH)
+    # 7. Gemini (MODERATE or HIGH, while digests are enabled)
     gemini_digest = None
-    if scoring_result["severity_label"] in ("MODERATE", "HIGH"):
+    if digests_enabled() and scoring_result["severity_label"] in ("MODERATE", "HIGH"):
         event_data_for_gemini = {
             "title": eonet["title"],
             "category": cat_name,

@@ -58,3 +58,17 @@ def committed_db_untouched():
     before = _sha256(COMMITTED_DB)
     yield
     assert _sha256(COMMITTED_DB) == before, f"{COMMITTED_DB} was modified by the test run"
+
+
+@pytest.fixture
+def pipeline(monkeypatch):
+    """Runs the real orchestrator with network, NLP and model steps faked."""
+    from backend.tests.helpers import FakePipeline
+    return FakePipeline(monkeypatch)
+
+
+@pytest.fixture
+def client():
+    from fastapi.testclient import TestClient
+    from backend.app.main import app
+    return TestClient(app)

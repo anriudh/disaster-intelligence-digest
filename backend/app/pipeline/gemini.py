@@ -21,6 +21,13 @@ if GEMINI_API_KEY:
     except Exception as e:
         logger.error(f"Failed to initialize Gemini client: {e}")
 
+def digests_enabled() -> bool:
+    """
+    Digest generation is paused unless DIGEST_GENERATION_ENABLED=true: the
+    digests are gated on, and restate, the unvalidated severity rating.
+    """
+    return os.getenv("DIGEST_GENERATION_ENABLED", "false").strip().lower() == "true"
+
 def check_quota() -> bool:
     """
     Checks if the daily quota of 80 calls has been reached.

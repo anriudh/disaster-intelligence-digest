@@ -11,3 +11,5 @@ services:
         sync: false
       - key: PYTHONPATH
         value: .
+      - key: DIGEST_GENERATION_ENABLED
+        value: "false"

@@ -7,6 +7,13 @@ import asyncio
 
 router = APIRouter()
 
+# The severity model has not been validated on real data (docs/audit/LEDGER.md),
+# so its outputs stay in the database for diagnostics and are not served.
+SEVERITY_STATUS = "withheld_unvalidated_model"
+WITHHELD_FIELDS = ("severity_label", "severity_score", "shap_values", "shap_status", "imputed_features")
+# Digest fields that restate the withheld rating
+WITHHELD_DIGEST_FIELDS = ("severity_rationale",)
+
 # Open events missing from the feed stay listed this long after they were last seen
 UNOBSERVED_LISTING_DAYS = 30
 
@@ -15,10 +22,9 @@ async def get_events():
     conn = get_db()
     cursor = conn.cursor()
     cutoff = (datetime.now(timezone.utc) - timedelta(days=UNOBSERVED_LISTING_DAYS)).isoformat(timespec="seconds")
-    # Join events with event_analysis to get severity_label.
     # 'null' is how digests that were never generated used to be stored.
     query = """
-        SELECT e.*, a.severity_label, a.severity_score, 
+        SELECT e.*,
                (a.gemini_digest IS NOT NULL AND a.gemini_digest != 'null') as has_digest
         FROM events e
         LEFT JOIN event_analysis a ON e.id = a.event_id
@@ -29,7 +35,7 @@ async def get_events():
     rows = cursor.fetchall()
     conn.close()
     
-    events = [dict(row) for row in rows]
+    events = [dict(row, severity_status=SEVERITY_STATUS) for row in rows]
     return {"events": events}
 
 @router.get("/events/{event_id}")
@@ -51,10 +57,17 @@ async def get_event_detail(event_id: str):
         raise HTTPException(status_code=404, detail="Event not found")
     
     event = dict(row)
+    for field in WITHHELD_FIELDS:
+        event.pop(field, None)
+    event["severity_status"] = SEVERITY_STATUS
+
     # Parse JSON fields
-    for field in ["ner_entities", "regex_signals", "keyphrases", "shap_values", "gemini_digest"]:
+    for field in ["ner_entities", "regex_signals", "keyphrases", "gemini_digest"]:
         if event.get(field):
             event[field] = json.loads(event[field])
+    if isinstance(event.get("gemini_digest"), dict):
+        for field in WITHHELD_DIGEST_FIELDS:
+            event["gemini_digest"].pop(field, None)
             
     return event
 
@@ -72,20 +85,10 @@ async def get_trends():
     rows = cursor.fetchall()
     category_trends = [dict(row) for row in rows]
     
-    # Severity distribution
-    query = """
-        SELECT severity_label, COUNT(*) as count
-        FROM event_analysis
-        GROUP BY severity_label
-    """
-    cursor.execute(query)
-    rows = cursor.fetchall()
-    severity_trends = [dict(row) for row in rows]
-    
     conn.close()
     return {
         "category_trends": category_trends,
-        "severity_trends": severity_trends
+        "severity_status": SEVERITY_STATUS
     }
 
 @router.get("/health")
