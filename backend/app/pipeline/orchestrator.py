@@ -110,15 +110,17 @@ async def run_pipeline():
             
             # Save analysis
             cursor.execute(
-                "INSERT INTO event_analysis (event_id, raw_text, ner_entities, regex_signals, keyphrases, embedding, "
+                "INSERT INTO event_analysis (event_id, raw_text, scrape_source, scrape_quality, ner_entities, regex_signals, keyphrases, embedding, "
                 "severity_label, severity_score, shap_values, shap_status, gemini_digest, nlp_summary, analysed_at) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
-                "ON CONFLICT(event_id) DO UPDATE SET raw_text=excluded.raw_text, ner_entities=excluded.ner_entities, "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+                "ON CONFLICT(event_id) DO UPDATE SET raw_text=excluded.raw_text, scrape_source=excluded.scrape_source, "
+                "scrape_quality=excluded.scrape_quality, ner_entities=excluded.ner_entities, "
                 "regex_signals=excluded.regex_signals, keyphrases=excluded.keyphrases, embedding=excluded.embedding, "
                 "severity_label=excluded.severity_label, severity_score=excluded.severity_score, "
                 "shap_values=excluded.shap_values, shap_status=excluded.shap_status, gemini_digest=excluded.gemini_digest, analysed_at=excluded.analysed_at",
                 (
-                    event_id, raw_text, json.dumps(nlp_results["entities"]), json.dumps(nlp_results["signals"]),
+                    event_id, raw_text, scraping_result["source"], scraping_result["quality"],
+                    json.dumps(nlp_results["entities"]), json.dumps(nlp_results["signals"]),
                     json.dumps(nlp_results["keyphrases"]), json.dumps(embeddings),
                     scoring_result["severity_label"], scoring_result["severity_score"],
                     json.dumps(scoring_result["shap_values"]), scoring_result["shap_status"], json.dumps(gemini_digest),

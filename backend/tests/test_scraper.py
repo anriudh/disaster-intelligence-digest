@@ -1,7 +1,7 @@
 import pytest
 import asyncio
 from unittest.mock import patch, MagicMock, AsyncMock
-from backend.app.pipeline.scraper import fetch_source_text, SEMAPHORE
+from backend.app.pipeline.scraper import fetch_source_text, scrape_event_sources, is_boilerplate, SEMAPHORE
 
 @pytest.mark.asyncio
 async def test_fetch_source_text_real_url():
@@ -76,3 +76,59 @@ async def test_sleep_jitter_applied():
                 # Check that sleep was called with a value between 1.5 and 3.5
                 args, _ = mock_sleep.call_args
                 assert 1.5 <= args[0] <= 3.5
+
+
+SPA_SHELL = (
+    '<!doctype html><html><head><title>InciWeb</title></head><body>'
+    '<noscript>You need to enable JavaScript to run this app.</noscript>'
+    '<div id="root"></div></body></html>'
+)
+ARTICLE = "The Sawmill Fire has burned 12,500 acres near Flagstaff. " * 10
+
+
+def mock_get(html):
+    response = MagicMock()
+    response.text = html
+    response.raise_for_status = MagicMock()
+    return patch("httpx.AsyncClient.get", new_callable=AsyncMock, return_value=response)
+
+
+async def test_javascript_shell_is_rejected():
+    # Real trafilatura on the page shell that 99/100 committed rows came from
+    with mock_get(SPA_SHELL), patch("asyncio.sleep", new_callable=AsyncMock):
+        text = await fetch_source_text("https://inciweb.wildfire.gov/x", "fallback text")
+    assert text == "fallback text"
+
+
+async def test_article_is_accepted():
+    with mock_get("<html></html>"), patch("trafilatura.extract", return_value=ARTICLE), \
+            patch("asyncio.sleep", new_callable=AsyncMock):
+        text = await fetch_source_text("https://example.com", "fallback text")
+    assert text == ARTICLE
+
+
+def test_is_boilerplate():
+    assert is_boilerplate("You need to enable JavaScript to run this app.")
+    assert is_boilerplate("  Please enable  JavaScript\nto view this page ")
+    assert not is_boilerplate("A flood in the valley.")
+    # A long article that happens to mention JavaScript is kept
+    assert not is_boilerplate(ARTICLE + " Please enable JavaScript for the map.")
+
+
+async def test_scrape_event_sources_reports_quality():
+    event = {"title": "Sawmill Fire", "description": None, "sources": [{"url": "https://a.example"}]}
+    with mock_get(SPA_SHELL), patch("asyncio.sleep", new_callable=AsyncMock):
+        result = await scrape_event_sources(event)
+    assert result == {"text": "Sawmill Fire", "source": "fallback", "quality": "fallback"}
+
+    with mock_get("<html></html>"), patch("trafilatura.extract", return_value=ARTICLE), \
+            patch("asyncio.sleep", new_callable=AsyncMock):
+        result = await scrape_event_sources(event)
+    assert result == {"text": ARTICLE, "source": "https://a.example", "quality": "extracted"}
+
+
+async def test_null_description_does_not_leak_none():
+    event = {"title": "Super Typhoon Sinlaku", "description": None, "sources": []}
+    result = await scrape_event_sources(event)
+    assert result["text"] == "Super Typhoon Sinlaku"
+    assert "None" not in result["text"]
