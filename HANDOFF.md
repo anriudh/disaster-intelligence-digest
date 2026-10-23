@@ -19,7 +19,7 @@ Fix the audited defects in the disaster-intelligence-digest backend (Track A, st
 ## Not done
 1. Ask the owner which next step to take. Each of these needs their explicit approval:
    a. (done) A9 applied to the committed DB; see docs/audit/README.md.
-   b. Tier 3 live checks (`docs/audit/IMPLEMENTATION_PLAN.md` §5: 1 EONET GET, ≤10 source URLs, 1 GDACS call; outputs outside the repo), then A10 (stale-event lookup after 3 unseen runs).
+   b. (A10 done, provisional N=5; Tier 3 approved but blocked: the network policy denies eonet.gsfc.nasa.gov; harness in the scratchpad, lost on reclaim) Tier 3 live checks (`docs/audit/IMPLEMENTATION_PLAN.md` §5: 1 EONET GET, ≤10 source URLs, 1 GDACS call; outputs outside the repo), then A10 (stale-event lookup after 3 unseen runs).
    c. Frontend phase: remove severity UI (Map.jsx, EventDetail.jsx, TrendPanel.jsx), plus a frontend test framework.
    d. Track M (model validation, M1-M4).
 2. When the owner asks: open one PR `backend-remediation` → `main`, using a merge commit, not a squash.

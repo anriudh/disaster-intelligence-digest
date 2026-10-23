@@ -53,7 +53,18 @@ class FakePipeline:
             self.digest_calls += 1
             return self.digest
 
+        # EONET records returned by the per-event lookup; a missing ID raises
+        self.records = {}
+        self.lookups = []
+
+        async def lookup(event_id):
+            self.lookups.append(event_id)
+            if event_id not in self.records:
+                raise RuntimeError(f"no record for {event_id}")
+            return self.records[event_id]
+
         monkeypatch.setattr(orchestrator, "run_ingestion", run_ingestion)
+        monkeypatch.setattr(orchestrator, "fetch_eonet_event", lookup)
         monkeypatch.setattr(orchestrator, "scrape_event_sources", scrape)
         monkeypatch.setattr(orchestrator, "run_nlp_pipeline",
                             lambda text: {"entities": [], "signals": {}, "keyphrases": self.keyphrases})

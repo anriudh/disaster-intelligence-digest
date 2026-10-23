@@ -2,7 +2,8 @@ import asyncio
 from datetime import datetime, timezone
 import json
 import logging
-from backend.app.pipeline.ingest import run_ingestion, event_timeline, point_of, parse_date
+import os
+from backend.app.pipeline.ingest import run_ingestion, fetch_eonet_event, event_timeline, point_of, parse_date
 from backend.app.pipeline.scraper import scrape_event_sources
 from backend.app.pipeline.nlp import run_nlp_pipeline
 from backend.app.pipeline.embeddings import get_embeddings
@@ -31,7 +32,7 @@ async def process_event(cursor, eonet: dict, gdacs, now: str) -> str:
     row = cursor.fetchone()
     if row and row[0] == last_updated:
         cursor.execute(
-            "UPDATE events SET last_seen = ?, observation_state = 'observed' WHERE id = ?",
+            "UPDATE events SET last_seen = ?, observation_state = 'observed', unseen_runs = 0 WHERE id = ?",
             (now, event_id)
         )
         return "skipped"
@@ -96,14 +97,14 @@ async def process_event(cursor, eonet: dict, gdacs, now: str) -> str:
     closed_at = eonet.get("closed")
     cursor.execute(
         "INSERT INTO events (id, title, category, status, first_seen, last_updated, lat, lon, geometry_type, "
-        "source_count, closed_at, closure_source, last_seen, observation_state, gdacs_match_status) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'observed', ?) "
+        "source_count, closed_at, closure_source, last_seen, observation_state, unseen_runs, gdacs_match_status) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'observed', 0, ?) "
         "ON CONFLICT(id) DO UPDATE SET title=excluded.title, status=excluded.status, "
         "first_seen=MIN(COALESCE(events.first_seen, excluded.first_seen), excluded.first_seen), "
         "last_updated=excluded.last_updated, lat=excluded.lat, lon=excluded.lon, "
         "geometry_type=excluded.geometry_type, source_count=excluded.source_count, "
         "closed_at=excluded.closed_at, closure_source=excluded.closure_source, "
-        "last_seen=excluded.last_seen, observation_state=excluded.observation_state, "
+        "last_seen=excluded.last_seen, observation_state=excluded.observation_state, unseen_runs=0, "
         "gdacs_match_status=excluded.gdacs_match_status",
         (
             event_id, eonet["title"], cat_name, 'open' if closed_at is None else 'closed',
@@ -159,13 +160,58 @@ def mark_unobserved(cursor, seen_ids, now: str):
     """
     Open events missing from this run's feed are marked not_observed, never
     closed: the feed is truncated at 100 events, so absence proves nothing.
+    unseen_runs counts consecutive completed runs without the event.
     """
     placeholders = ", ".join("?" for _ in seen_ids)
     exclude = f"AND id NOT IN ({placeholders})" if seen_ids else ""
     cursor.execute(
-        f"UPDATE events SET observation_state = 'not_observed' WHERE status = 'open' {exclude}",
+        f"UPDATE events SET observation_state = 'not_observed', unseen_runs = unseen_runs + 1 "
+        f"WHERE status = 'open' {exclude}",
         list(seen_ids)
     )
+
+# An open event missing from the feed for this many consecutive completed runs
+# is looked up by ID, at most stale_lookup_limit() events per run (P-3)
+STALE_AFTER_RUNS = 3
+DEFAULT_STALE_LOOKUP_LIMIT = 5
+
+def stale_lookup_limit() -> int:
+    try:
+        return max(0, int(os.getenv("STALE_LOOKUP_LIMIT", DEFAULT_STALE_LOOKUP_LIMIT)))
+    except ValueError:
+        return DEFAULT_STALE_LOOKUP_LIMIT
+
+async def lookup_stale_events(cursor, now: str) -> dict:
+    """
+    Looks up stale open events by ID, least recently looked up first. Closes
+    one only when its EONET record has a closed date; an open record or a
+    failed lookup leaves it open and not_observed. Returns outcome counts.
+    """
+    counts = {"closed": 0, "open": 0, "failed": 0}
+    cursor.execute(
+        "SELECT id FROM events WHERE status = 'open' AND unseen_runs >= ? "
+        "ORDER BY last_lookup_at IS NOT NULL, last_lookup_at, id LIMIT ?",
+        (STALE_AFTER_RUNS, stale_lookup_limit())
+    )
+    for (event_id,) in cursor.fetchall():
+        try:
+            closed_at = (await fetch_eonet_event(event_id)).get("closed")
+        except Exception as e:
+            logger.warning(f"Lookup of stale event {event_id} failed: {type(e).__name__}: {e}")
+            counts["failed"] += 1
+            cursor.execute("UPDATE events SET last_lookup_at = ? WHERE id = ?", (now, event_id))
+            continue
+        if closed_at:
+            cursor.execute(
+                "UPDATE events SET status = 'closed', closed_at = ?, closure_source = 'eonet_lookup', "
+                "last_lookup_at = ? WHERE id = ?",
+                (closed_at, now, event_id)
+            )
+            counts["closed"] += 1
+        else:
+            cursor.execute("UPDATE events SET last_lookup_at = ? WHERE id = ?", (now, event_id))
+            counts["open"] += 1
+    return counts
 
 # Schedule (used by main.py and by the health check's freshness thresholds)
 PIPELINE_INTERVAL_MINUTES = 20
@@ -262,6 +308,10 @@ async def _execute_run():
                 logger.exception(f"Event {event_id} failed; continuing with the next event")
 
         mark_unobserved(cursor, [item["eonet"]["id"] for item in ingested_events], now)
+        conn.commit()
+        lookups = await lookup_stale_events(cursor, now)
+        conn.commit()
+        logger.info(f"Stale-event lookups: {lookups}")
         status = "partial" if counts["failed"] else "success"
         _finish_run(conn, run_id, status, counts, last_error)
         logger.info(f"Pipeline run finished ({status}): {counts}")

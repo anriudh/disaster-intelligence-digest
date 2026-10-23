@@ -80,6 +80,17 @@ async def fetch_eonet_events(limit=100):
         
         return filtered_events
 
+async def fetch_eonet_event(event_id: str) -> dict:
+    """Fetches one EONET event by ID, open or closed (the lookup for stale events)."""
+    url = f"https://eonet.gsfc.nasa.gov/api/v3/events/{event_id}"
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.get(url)
+        response.raise_for_status()
+        record = response.json()
+    if record.get("id") != event_id:
+        raise ValueError(f"Lookup for {event_id} returned {record.get('id')!r}")
+    return record
+
 def get_gdacs_events():
     client = GDACSAPIReader()
     try:
