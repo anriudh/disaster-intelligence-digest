@@ -101,3 +101,17 @@ def test_class_contributions_shapes():
 
     with pytest.raises(ValueError):
         class_contributions(np.ones((1, n - 1, 3)), 0)
+
+
+def test_missing_features_are_imputed_and_reported():
+    features = {"event_category_encoded": 0, "gdacs_alert_score": None,
+                "gdacs_population_exposure": None, "source_count": 2}
+    result = score_event(features)
+    assert "gdacs_alert_score" in result["imputed_features"]
+    assert "gdacs_population_exposure" in result["imputed_features"]
+    assert "source_count" not in result["imputed_features"]
+    assert result["severity_label"] in ("LOW", "MODERATE", "HIGH")
+
+    # None is treated exactly like an absent feature
+    absent = score_event({"event_category_encoded": 0, "source_count": 2})
+    assert absent["severity_score"] == pytest.approx(result["severity_score"])

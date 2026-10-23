@@ -37,8 +37,10 @@ class FakePipeline:
         self.label = "LOW"
         self.digest = None
 
+        self.gdacs = {}
+
         async def run_ingestion():
-            return [{"eonet": e, "gdacs": None} for e in self.feed]
+            return [{"eonet": e, "gdacs": self.gdacs.get(e["id"])} for e in self.feed]
 
         async def scrape(event):
             return {"text": "text", "source": "fallback", "quality": "fallback"}
@@ -46,7 +48,7 @@ class FakePipeline:
         def score(features):
             self.scored.append(features)
             return {"severity_label": self.label, "severity_score": 0.9,
-                    "shap_values": {}, "shap_status": "ok"}
+                    "shap_values": {}, "shap_status": "ok", "imputed_features": []}
 
         async def digest(data):
             return self.digest
@@ -204,3 +206,28 @@ async def test_polygon_uses_ring_centre(pipeline):
     assert (event["lat"], event["lon"]) == (31.0, -109.0)
     assert event["geometry_type"] == "Polygon"
     assert pipeline.scored[0]["geometry_type_encoded"] == 1
+
+
+async def test_gdacs_missingness_is_explicit(pipeline):
+    pipeline.gdacs["EONET_1"] = {"properties": {"eventid": 7, "alertlevel": "Orange",
+                                               "alertscore": 2.5, "population": 1200}}
+    await pipeline.run(eonet_event("EONET_1"), eonet_event("EONET_2"))
+
+    matched, unmatched = pipeline.scored
+    assert matched["gdacs_alert_score"] == 2.5
+    assert matched["gdacs_population_exposure"] == 1200
+    # No -1 sentinels: missing values reach the scorer as None
+    assert unmatched["gdacs_alert_score"] is None
+    assert unmatched["gdacs_population_exposure"] is None
+
+    assert row("events", "id", "EONET_1")["gdacs_match_status"] == "matched"
+    assert row("events", "id", "EONET_2")["gdacs_match_status"] == "no_match"
+    assert row("gdacs_enrichment", "event_id", "EONET_1")["population_exposure"] == 1200
+    assert row("gdacs_enrichment", "event_id", "EONET_2") is None
+
+
+async def test_gdacs_match_without_population_stores_null(pipeline):
+    pipeline.gdacs["EONET_1"] = {"properties": {"eventid": 7, "alertlevel": "Green", "alertscore": 1.0}}
+    await pipeline.run(eonet_event("EONET_1"))
+    assert row("gdacs_enrichment", "event_id", "EONET_1")["population_exposure"] is None
+    assert pipeline.scored[0]["gdacs_population_exposure"] is None

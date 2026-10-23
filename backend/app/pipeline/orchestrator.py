@@ -15,6 +15,9 @@ logger = logging.getLogger(__name__)
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
+def optional_number(value, cast):
+    return None if value is None else cast(value)
+
 async def process_event(cursor, eonet: dict, gdacs, now: str) -> str:
     """
     Analyses and saves one EONET event. Returns "processed", or "skipped" when
@@ -59,8 +62,9 @@ async def process_event(cursor, eonet: dict, gdacs, now: str) -> str:
         "geometry_type_encoded": 1 if latest["type"] == "Polygon" else 0,
         "source_count": len(eonet["sources"]),
         "event_duration_days": 0.0, # Placeholder
-        "gdacs_alert_score": float(gdacs_props.get("alertscore", -1.0)),
-        "gdacs_population_exposure": int(gdacs_props.get("population", -1)),
+        # None when there is no GDACS match; never a -1 sentinel
+        "gdacs_alert_score": optional_number(gdacs_props.get("alertscore"), float),
+        "gdacs_population_exposure": optional_number(gdacs_props.get("population"), int),
         "ner_location_count": len([e for e in nlp_results["entities"] if e[1] in ("GPE", "LOC")]),
         "ner_org_count": len([e for e in nlp_results["entities"] if e[1] == "ORG"]),
         "month": parse_date(last_updated).month,
@@ -92,18 +96,20 @@ async def process_event(cursor, eonet: dict, gdacs, now: str) -> str:
     closed_at = eonet.get("closed")
     cursor.execute(
         "INSERT INTO events (id, title, category, status, first_seen, last_updated, lat, lon, geometry_type, "
-        "source_count, closed_at, closure_source, last_seen, observation_state) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'observed') "
+        "source_count, closed_at, closure_source, last_seen, observation_state, gdacs_match_status) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'observed', ?) "
         "ON CONFLICT(id) DO UPDATE SET title=excluded.title, status=excluded.status, "
         "first_seen=MIN(COALESCE(events.first_seen, excluded.first_seen), excluded.first_seen), "
         "last_updated=excluded.last_updated, lat=excluded.lat, lon=excluded.lon, "
         "geometry_type=excluded.geometry_type, source_count=excluded.source_count, "
         "closed_at=excluded.closed_at, closure_source=excluded.closure_source, "
-        "last_seen=excluded.last_seen, observation_state=excluded.observation_state",
+        "last_seen=excluded.last_seen, observation_state=excluded.observation_state, "
+        "gdacs_match_status=excluded.gdacs_match_status",
         (
             event_id, eonet["title"], cat_name, 'open' if closed_at is None else 'closed',
             first_seen, last_updated, lat, lon, latest["type"], len(eonet["sources"]),
-            closed_at, None if closed_at is None else "eonet_closed_field", now
+            closed_at, None if closed_at is None else "eonet_closed_field", now,
+            "matched" if gdacs else "no_match"
         )
     )
 
@@ -111,13 +117,13 @@ async def process_event(cursor, eonet: dict, gdacs, now: str) -> str:
     # and never overwrites one generated earlier.
     cursor.execute(
         "INSERT INTO event_analysis (event_id, raw_text, scrape_source, scrape_quality, ner_entities, regex_signals, keyphrases, embedding, "
-        "severity_label, severity_score, shap_values, shap_status, gemini_digest, nlp_summary, analysed_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+        "severity_label, severity_score, shap_values, shap_status, imputed_features, gemini_digest, nlp_summary, analysed_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
         "ON CONFLICT(event_id) DO UPDATE SET raw_text=excluded.raw_text, scrape_source=excluded.scrape_source, "
         "scrape_quality=excluded.scrape_quality, ner_entities=excluded.ner_entities, "
         "regex_signals=excluded.regex_signals, keyphrases=excluded.keyphrases, embedding=excluded.embedding, "
         "severity_label=excluded.severity_label, severity_score=excluded.severity_score, "
-        "shap_values=excluded.shap_values, shap_status=excluded.shap_status, "
+        "shap_values=excluded.shap_values, shap_status=excluded.shap_status, imputed_features=excluded.imputed_features, "
         "gemini_digest=COALESCE(excluded.gemini_digest, event_analysis.gemini_digest), "
         "nlp_summary=excluded.nlp_summary, analysed_at=excluded.analysed_at",
         (
@@ -126,6 +132,7 @@ async def process_event(cursor, eonet: dict, gdacs, now: str) -> str:
             json.dumps(nlp_results["keyphrases"]), json.dumps(embeddings),
             scoring_result["severity_label"], scoring_result["severity_score"],
             json.dumps(scoring_result["shap_values"]), scoring_result["shap_status"],
+            json.dumps(scoring_result["imputed_features"]),
             json.dumps(gemini_digest) if gemini_digest is not None else None,
             ", ".join([k[0] for k in nlp_results["keyphrases"][:3]]), # simple fallback summary
             now
@@ -141,8 +148,8 @@ async def process_event(cursor, eonet: dict, gdacs, now: str) -> str:
             "gdacs_alert_score=excluded.gdacs_alert_score, population_exposure=excluded.population_exposure",
             (
                 event_id, str(gdacs_props.get("eventid")), gdacs_props.get("alertlevel"),
-                float(gdacs_props.get("alertscore", 0)),
-                int(gdacs_props.get("population", -1)),
+                optional_number(gdacs_props.get("alertscore"), float),
+                optional_number(gdacs_props.get("population"), int),
                 now
             )
         )

@@ -31,7 +31,8 @@ These are records of the audit of baseline commit `814f90b`, and of the plans fo
 | A1 migration framework | 1b7a937 | done: 10 migration tests (fresh DB, copy of committed DB, no-op rerun, rollback on failure, checksum and missing-file guards, restore from backup); startup verified on a DB copy with no writes |
 | A2 SHAP fix | 9dc6dbb | done: SHAP values equal xgboost pred_contribs for LOW, MODERATE and HIGH fixtures; labels unchanged; failures recorded as shap_status=error; tests fail on the old indexing |
 | A4 extraction quality | 00c078f | done: the JS shell (real trafilatura output) is rejected; articles accepted; null description no longer gives "None"; source and quality stored |
-| A5 lifecycle | (this commit) | done: 12 lifecycle tests through run_pipeline (10 fail on the old code): date order, reprocessing, source-only closure, not_observed + 30-day listing, NULL digests, digest preservation, nlp_summary refresh, polygon centre |
+| A5 lifecycle | f915952 | done: 12 lifecycle tests through run_pipeline (10 fail on the old code): date order, reprocessing, source-only closure, not_observed + 30-day listing, NULL digests, digest preservation, nlp_summary refresh, polygon centre |
+| P-2 explicit GDACS missingness | (this commit) | done: unmatched events give None (not -1) to the scorer, imputed features recorded, gdacs_match_status stored; 17-feature contract unchanged |
 | A3 severity withholding (backend) | | pending |
 | A6 trigger | | pending |
 | A7 isolation and health | | pending |

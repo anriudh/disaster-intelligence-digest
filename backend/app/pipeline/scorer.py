@@ -68,15 +68,18 @@ def score_event(features_dict: dict):
     """
     load_models()
     if model is None or imputer is None:
-        return {"severity_label": "UNKNOWN", "severity_score": 0.0, "shap_values": {}, "shap_status": "error"}
+        return {"severity_label": "UNKNOWN", "severity_score": 0.0, "shap_values": {}, "shap_status": "error",
+                "imputed_features": []}
 
-    # Prepare DataFrame
+    # Prepare DataFrame. Missing features (absent or None) become NaN, which the
+    # imputer fills with its training medians; imputed_features records which.
     df = pd.DataFrame([features_dict])
     # Ensure all columns exist and are in order
     for col in FEATURE_COLUMNS:
         if col not in df.columns:
             df[col] = np.nan
-    df = df[FEATURE_COLUMNS]
+    df = df[FEATURE_COLUMNS].apply(pd.to_numeric).astype(float)
+    imputed_features = [col for col in FEATURE_COLUMNS if pd.isna(df.at[0, col])]
 
     # Impute
     X_imputed = pd.DataFrame(imputer.transform(df), columns=FEATURE_COLUMNS)
@@ -105,7 +108,8 @@ def score_event(features_dict: dict):
         "severity_label": severity_label,
         "severity_score": severity_score,
         "shap_values": top_shap,
-        "shap_status": shap_status
+        "shap_status": shap_status,
+        "imputed_features": imputed_features
     }
 
 if __name__ == "__main__":
