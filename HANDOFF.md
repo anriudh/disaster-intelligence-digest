@@ -1,7 +1,7 @@
-# HANDOFF 2026-10-23 19:21 | backend-remediation@b54c599 | paused: manual (moving to a local environment for network access)
+# HANDOFF 2026-10-23 19:21 | backend-remediation@2ff0bff | paused: manual (moving to a local environment for network access)
 Resume protocol: read this file and nothing else, then open only the files under Load.
 Do not scan the repo, re-read the old conversation, or re-derive what is listed here.
-If HEAD is not b54c599, run `git log --oneline b54c599..HEAD` first. Start at Not done 1.
+If HEAD is not 2ff0bff, run `git log --oneline 2ff0bff..HEAD` first. Start at Not done 1.
 Delete this file once Not done is finished.
 
 ## Goal
