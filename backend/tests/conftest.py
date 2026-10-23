@@ -70,5 +70,15 @@ def pipeline(monkeypatch):
 @pytest.fixture
 def client():
     from fastapi.testclient import TestClient
+    from backend.app.api.limits import limiter
     from backend.app.main import app
+    limiter.reset()
     return TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def no_run_in_progress():
+    """A test that leaves a pipeline run claimed must not affect the next one."""
+    yield
+    if "backend.app.pipeline.orchestrator" in sys.modules:
+        sys.modules["backend.app.pipeline.orchestrator"].release_run()

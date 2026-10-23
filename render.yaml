@@ -9,6 +9,8 @@ services:
         sync: false
       - key: FRONTEND_URL
         sync: false
+      - key: PIPELINE_TRIGGER_TOKEN
+        sync: false
       - key: PYTHONPATH
         value: .
       - key: DIGEST_GENERATION_ENABLED

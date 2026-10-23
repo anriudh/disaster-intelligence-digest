@@ -33,8 +33,8 @@ These are records of the audit of baseline commit `814f90b`, and of the plans fo
 | A4 extraction quality | 00c078f | done: the JS shell (real trafilatura output) is rejected; articles accepted; null description no longer gives "None"; source and quality stored |
 | A5 lifecycle | f915952 | done: 12 lifecycle tests through run_pipeline (10 fail on the old code): date order, reprocessing, source-only closure, not_observed + 30-day listing, NULL digests, digest preservation, nlp_summary refresh, polygon centre |
 | P-2 explicit GDACS missingness | d43fd6e | done: unmatched events give None (not -1) to the scorer, imputed features recorded, gdacs_match_status stored; 17-feature contract unchanged |
-| A3 severity withholding (backend) | (this commit) | done: /events, /events/{id} and /trends serve no severity, score, SHAP or severity_rationale, and add severity_status; values still stored; digests paused unless DIGEST_GENERATION_ENABLED=true. UI part deferred |
-| A6 trigger | | pending |
+| A3 severity withholding (backend) | f4fea7a | done: /events, /events/{id} and /trends serve no severity, score, SHAP or severity_rationale, and add severity_status; values still stored; digests paused unless DIGEST_GENERATION_ENABLED=true. UI part deferred |
+| A6 trigger | (this commit) | done: no token 503, bad token 401, good token 202, 409 during a run, scheduler skips during a manual run, 3/hour trigger (failed attempts count) and 120/min reads give 429, token-protected diagnostics endpoint |
 | A7 isolation and health | | pending |
 | A8 startup and pins | | pending |
 | A9 backfills (tested on copies) | | pending |

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Request, HTTPException
+from backend.app.api.limits import limiter, READ_LIMIT, TRIGGER_LIMIT, require_pipeline_token
 from backend.app.db.database import get_db
-from backend.app.pipeline.orchestrator import run_pipeline
+from backend.app.pipeline.orchestrator import start_pipeline_task
 from datetime import date, datetime, timedelta, timezone
 import json
-import asyncio
 
 router = APIRouter()
 
@@ -18,7 +18,8 @@ WITHHELD_DIGEST_FIELDS = ("severity_rationale",)
 UNOBSERVED_LISTING_DAYS = 30
 
 @router.get("/events")
-async def get_events():
+@limiter.limit(READ_LIMIT)
+async def get_events(request: Request):
     conn = get_db()
     cursor = conn.cursor()
     cutoff = (datetime.now(timezone.utc) - timedelta(days=UNOBSERVED_LISTING_DAYS)).isoformat(timespec="seconds")
@@ -39,7 +40,8 @@ async def get_events():
     return {"events": events}
 
 @router.get("/events/{event_id}")
-async def get_event_detail(event_id: str):
+@limiter.limit(READ_LIMIT)
+async def get_event_detail(request: Request, event_id: str):
     conn = get_db()
     cursor = conn.cursor()
     query = """
@@ -72,7 +74,8 @@ async def get_event_detail(event_id: str):
     return event
 
 @router.get("/trends")
-async def get_trends():
+@limiter.limit(READ_LIMIT)
+async def get_trends(request: Request):
     conn = get_db()
     cursor = conn.cursor()
     # Simple aggregation by category
@@ -114,8 +117,36 @@ async def health():
         "gemini_calls_today": gemini_count
     }
 
-@router.post("/pipeline/trigger")
-async def trigger_pipeline():
+# The token is checked inside the rate-limited handler, so failed attempts count too
+@router.post("/pipeline/trigger", status_code=202)
+@limiter.limit(TRIGGER_LIMIT)
+async def trigger_pipeline(request: Request):
+    require_pipeline_token(request.headers.get("authorization"))
     # Run in background to avoid timeout
-    asyncio.create_task(run_pipeline())
+    if start_pipeline_task() is None:
+        raise HTTPException(status_code=409, detail="A pipeline run is already in progress")
     return {"message": "Pipeline triggered"}
+
+@router.get("/internal/events/{event_id}/diagnostics")
+@limiter.limit(READ_LIMIT)
+async def get_event_diagnostics(request: Request, event_id: str):
+    """The withheld model outputs for one event, for operators only."""
+    require_pipeline_token(request.headers.get("authorization"))
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT event_id, severity_label, severity_score, shap_values, shap_status, imputed_features, "
+        "gemini_digest, scrape_source, scrape_quality, analysed_at FROM event_analysis WHERE event_id = ?",
+        (event_id,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    diagnostics = dict(row)
+    for field in ["shap_values", "imputed_features", "gemini_digest"]:
+        if diagnostics.get(field):
+            diagnostics[field] = json.loads(diagnostics[field])
+    return diagnostics

@@ -167,7 +167,57 @@ def mark_unobserved(cursor, seen_ids, now: str):
         list(seen_ids)
     )
 
+# One run at a time, shared by the scheduler and the manual trigger. The app runs
+# a single process (render.yaml), so an in-process flag is enough; several
+# workers would need a lock in the database instead.
+_run_active = False
+_background_tasks = set()
+
+def try_claim_run() -> bool:
+    global _run_active
+    if _run_active:
+        return False
+    _run_active = True
+    return True
+
+def release_run():
+    global _run_active
+    _run_active = False
+
+def run_in_progress() -> bool:
+    return _run_active
+
 async def run_pipeline():
+    """Runs the pipeline unless a run is already in progress (then returns None)."""
+    if not try_claim_run():
+        logger.warning("Pipeline run skipped: another run is in progress.")
+        return None
+    try:
+        return await _execute_run()
+    finally:
+        release_run()
+
+def start_pipeline_task():
+    """
+    Claims a run and starts it in the background. Returns the task, or None if
+    a run is already in progress. The claim is taken before this returns, so a
+    second caller is refused even before the first task has started.
+    """
+    if not try_claim_run():
+        return None
+
+    async def run_and_release():
+        try:
+            return await _execute_run()
+        finally:
+            release_run()
+
+    task = asyncio.create_task(run_and_release())
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+    return task
+
+async def _execute_run():
     """
     Orchestrates the full pipeline: Ingest -> Scrape -> NLP -> Score -> Gemini -> SQLite
     """
