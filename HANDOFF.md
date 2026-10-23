@@ -1,7 +1,7 @@
-# HANDOFF 2026-10-23 18:45 | backend-remediation@c723444 | paused: manual
+# HANDOFF 2026-10-23 18:45 | backend-remediation@3491a17 | paused: manual
 Resume protocol: read this file and nothing else, then open only the files under Load.
 Do not scan the repo, re-read the old conversation, or re-derive what is listed here.
-If HEAD is not c723444, run `git log --oneline c723444..HEAD` first. Start at Not done 1.
+If HEAD is not 3491a17, run `git log --oneline 3491a17..HEAD` first. Start at Not done 1.
 Delete this file once Not done is finished.
 
 ## Goal
