@@ -9,8 +9,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Load model and imputer once at module level
-MODEL_PATH = "backend/models/severity_model.pkl"
-IMPUTER_PATH = "backend/models/imputer.pkl"
+MODELS_DIR = os.path.join(os.path.dirname(__file__), "../../models")
+MODEL_PATH = os.path.join(MODELS_DIR, "severity_model.pkl")
+IMPUTER_PATH = os.path.join(MODELS_DIR, "imputer.pkl")
 
 model = None
 imputer = None

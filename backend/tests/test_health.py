@@ -158,3 +158,9 @@ async def test_every_gemini_attempt_counts(monkeypatch):
     assert results == [None, None, {"what_happened": "fire"}]
     count = row("gemini_calls", "call_date", date.today().isoformat())["call_count"]
     assert count == 3
+
+
+def test_health_reports_components(client):
+    components = client.get("/api/health").json()["components"]
+    assert set(components) == {"spacy_model", "keyphrase_model", "embedding_model", "severity_model"}
+    assert all(isinstance(v, bool) for v in components.values())

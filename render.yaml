@@ -2,9 +2,11 @@ services:
   - type: web
     name: disaster-intel-backend
     runtime: python
-    buildCommand: pip install -r backend/requirements.txt
+    buildCommand: pip install -r backend/requirements.txt -c backend/constraints.txt && python -m spacy download en_core_web_md
     startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.16
       - key: GEMINI_API_KEY
         sync: false
       - key: FRONTEND_URL

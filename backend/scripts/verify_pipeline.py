@@ -2,7 +2,7 @@ import sqlite3
 import os
 import sys
 
-DB_PATH = "backend/data/disaster_intel.db"
+DB_PATH = os.path.join(os.path.dirname(__file__), "../data/disaster_intel.db")
 
 def verify():
     if not os.path.exists(DB_PATH):

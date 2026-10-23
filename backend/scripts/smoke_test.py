@@ -10,7 +10,7 @@ def test_health():
     assert response.status_code == 200
     data = response.json()
     assert "status" in data
-    assert "last_pipeline_run" in data
+    assert "last_run_started" in data
     print("Health check passed.")
 
 def test_events():
@@ -25,7 +25,7 @@ def test_events():
         assert "id" in event
         assert "title" in event
         assert "category" in event
-        assert "severity_label" in event
+        assert event["severity_status"] == "withheld_unvalidated_model"
         return event["id"]
     return None
 
@@ -38,7 +38,7 @@ def test_event_detail(event_id):
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == event_id
-    assert "severity_label" in data
+    assert data["severity_status"] == "withheld_unvalidated_model"
     print("Event detail test passed.")
 
 def test_trends():
@@ -47,7 +47,7 @@ def test_trends():
     assert response.status_code == 200
     data = response.json()
     assert "category_trends" in data
-    assert "severity_trends" in data
+    assert data["severity_status"] == "withheld_unvalidated_model"
     print("Trends test passed.")
 
 def test_rate_limiter():

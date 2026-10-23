@@ -16,14 +16,23 @@ An end-to-end AI/ML pipeline that ingests real-time natural disaster events from
 ## Setup Instructions
 
 ### Backend
+Run every command from the repository root.
+
 1. Clone the repository.
-2. Create a virtual environment: `python -m venv venv`
+2. Create a virtual environment with Python 3.13: `python -m venv venv`
 3. Activate venv: `source venv/bin/activate` (or `.\venv\Scripts\activate` on Windows)
-4. Install dependencies: `pip install -r backend/requirements.txt`
+4. Install dependencies: `pip install -r backend/requirements.txt -c backend/constraints.txt`
 5. Download spaCy model: `python -m spacy download en_core_web_md`
-6. Create `.env` in `backend/` with `GEMINI_API_KEY`.
-7. Seed the database: `python backend/scripts/seed_db.py`
-8. Start the server: `python backend/app/main.py`
+6. Create `.env` in `backend/` from `backend/.env.example` and set `GEMINI_API_KEY`. Set `PIPELINE_TRIGGER_TOKEN` to enable `POST /api/pipeline/trigger`.
+7. Seed the database: `python -m backend.scripts.seed_db`
+8. Start the server: `uvicorn backend.app.main:app --port 8000`
+
+Database migrations in `backend/app/db/migrations/` apply automatically at startup, after a backup of the database file (`*.db.bak-*`).
+
+### Tests
+1. Install test dependencies: `pip install -r backend/requirements-dev.txt -c backend/constraints.txt`
+2. Run `pytest` from the repository root. Tests use a temporary database and never touch `backend/data/disaster_intel.db`.
+3. `pytest -m model` runs the tests that need the NLP models and model artifacts; `pytest -m network` runs the ones that call live APIs.
 
 ### Frontend
 1. Navigate to `frontend/`.
@@ -33,5 +42,7 @@ An end-to-end AI/ML pipeline that ingests real-time natural disaster events from
 
 ## Notes
 - The database is pre-seeded with recent events.
-- The pipeline runs automatically every 20 minutes when the backend is active.
-- Gemini calls are capped at 80 per day to protect free tier quotas.
+- The pipeline runs automatically every 20 minutes when the backend is active, one run at a time. The first run is 20 minutes after startup.
+- `GET /api/health/live` reports that the process is up. `GET /api/health` reports pipeline freshness: `pending`, `ok`, or `degraded` when the last run failed or none completed in 45 minutes.
+- `POST /api/pipeline/trigger` needs `Authorization: Bearer <PIPELINE_TRIGGER_TOKEN>` and is disabled when the token is not set. API reads are limited to 120 per minute and the trigger to 3 per hour, per client address as the server sees it.
+- Gemini calls are capped at 80 attempts per day to protect free tier quotas.

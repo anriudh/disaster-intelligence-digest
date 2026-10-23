@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from backend.app.api.limits import limiter, READ_LIMIT, TRIGGER_LIMIT, require_pipeline_token
 from backend.app.db.database import get_db
 from backend.app.pipeline.orchestrator import start_pipeline_task, PIPELINE_INTERVAL_MINUTES, MISFIRE_GRACE_SECONDS
+from backend.app.pipeline import embeddings, nlp, scorer
 from datetime import date, datetime, timedelta, timezone
 import json
 
@@ -175,6 +176,13 @@ async def health():
         "last_error": last_error,
         "counts": {k: last_finished[k] for k in ("processed", "skipped", "failed")} if last_finished else None,
         "stale_after_minutes": int(STALE_AFTER.total_seconds() // 60),
+        # Models load at startup and fail softly; a missing one silently empties pipeline output
+        "components": {
+            "spacy_model": nlp.nlp is not None,
+            "keyphrase_model": nlp.kw_model is not None,
+            "embedding_model": embeddings.model is not None,
+            "severity_model": scorer.model is not None,
+        },
         "gemini_calls_today": gemini_count
     }
 
