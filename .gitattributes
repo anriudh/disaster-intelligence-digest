@@ -1,0 +1,2 @@
+*.sql text eol=lf
+backend/app/db/migrations/*.py text eol=lf
