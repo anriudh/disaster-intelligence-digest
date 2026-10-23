@@ -1,0 +1,157 @@
+import glob
+import hashlib
+import shutil
+import sqlite3
+
+import pytest
+
+from backend.app.db import database
+from backend.app.db.migrate import (
+    MigrationError,
+    discover_migrations,
+    restore_backup,
+    run_migrations,
+)
+from backend.tests.conftest import COMMITTED_DB
+
+
+def sha256(path):
+    with open(path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+
+def columns(db_path, table):
+    conn = sqlite3.connect(db_path)
+    cols = [row[1] for row in conn.execute(f"PRAGMA table_info({table})")]
+    conn.close()
+    return cols
+
+
+def versions(db_path):
+    conn = sqlite3.connect(db_path)
+    rows = [row[0] for row in conn.execute("SELECT version FROM schema_migrations ORDER BY version")]
+    conn.close()
+    return rows
+
+
+def backups(db_path):
+    return sorted(glob.glob(f"{db_path}.bak-*"))
+
+
+@pytest.fixture
+def mig_dir(tmp_path):
+    d = tmp_path / "migrations"
+    d.mkdir()
+    (d / "0001_add_note.sql").write_text(
+        "-- add a column\nALTER TABLE events ADD COLUMN note TEXT;\n"
+    )
+    (d / "0002_add_table.py").write_text(
+        "def migrate(conn):\n"
+        "    conn.execute('CREATE TABLE extra (id INTEGER PRIMARY KEY)')\n"
+    )
+    return d
+
+
+def test_shipped_migrations_are_well_formed():
+    # The README in the migrations directory must not be picked up as a migration
+    for version, name, path in discover_migrations():
+        assert name.endswith((".sql", ".py"))
+
+
+def test_fresh_db_migrates_with_backup(isolated_db, mig_dir):
+    assert run_migrations(str(isolated_db), str(mig_dir)) == [1, 2]
+    assert "note" in columns(isolated_db, "events")
+    assert versions(isolated_db) == [1, 2]
+
+    [backup] = backups(isolated_db)
+    assert ".bak-0001-" in backup
+    conn = sqlite3.connect(backup)
+    assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+    assert "note" not in [row[1] for row in conn.execute("PRAGMA table_info(events)")]
+    conn.close()
+
+
+def test_rerun_is_a_noop(isolated_db, mig_dir):
+    run_migrations(str(isolated_db), str(mig_dir))
+    before = sha256(isolated_db)
+    assert run_migrations(str(isolated_db), str(mig_dir)) == []
+    assert sha256(isolated_db) == before
+    assert len(backups(isolated_db)) == 1
+
+
+def test_nothing_pending_writes_nothing(isolated_db, tmp_path):
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    before = sha256(isolated_db)
+    assert run_migrations(str(isolated_db), str(empty)) == []
+    assert sha256(isolated_db) == before
+    assert backups(isolated_db) == []
+
+
+def test_copy_of_committed_db_migrates(tmp_path, mig_dir):
+    copy = tmp_path / "committed_copy.db"
+    shutil.copyfile(COMMITTED_DB, copy)
+    conn = sqlite3.connect(copy)
+    counts = {t: conn.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
+              for t in ("events", "event_analysis", "gdacs_enrichment")}
+    conn.close()
+
+    assert run_migrations(str(copy), str(mig_dir)) == [1, 2]
+
+    conn = sqlite3.connect(copy)
+    assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+    for table, count in counts.items():
+        assert conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] == count
+    conn.close()
+    assert counts["events"] > 0
+
+
+def test_failing_migration_rolls_back(isolated_db, mig_dir):
+    (mig_dir / "0003_broken.sql").write_text(
+        "ALTER TABLE events ADD COLUMN half_done TEXT;\nTHIS IS NOT SQL;\n"
+    )
+    (mig_dir / "0004_never_runs.sql").write_text("ALTER TABLE events ADD COLUMN later TEXT;\n")
+
+    with pytest.raises(MigrationError, match="0003_broken.sql"):
+        run_migrations(str(isolated_db), str(mig_dir))
+
+    cols = columns(isolated_db, "events")
+    assert "note" in cols
+    assert "half_done" not in cols
+    assert "later" not in cols
+    assert versions(isolated_db) == [1, 2]
+
+
+def test_changed_migration_is_refused(isolated_db, mig_dir):
+    run_migrations(str(isolated_db), str(mig_dir))
+    (mig_dir / "0001_add_note.sql").write_text("ALTER TABLE events ADD COLUMN other TEXT;\n")
+    with pytest.raises(MigrationError, match="changed after it was applied"):
+        run_migrations(str(isolated_db), str(mig_dir))
+
+
+def test_missing_applied_migration_is_refused(isolated_db, mig_dir):
+    run_migrations(str(isolated_db), str(mig_dir))
+    (mig_dir / "0002_add_table.py").unlink()
+    with pytest.raises(MigrationError, match="missing"):
+        run_migrations(str(isolated_db), str(mig_dir))
+
+
+def test_restore_from_backup(isolated_db, mig_dir):
+    conn = sqlite3.connect(isolated_db)
+    conn.execute("INSERT INTO events (id, title, category) VALUES ('E1', 'Fire', 'Wildfires')")
+    conn.commit()
+    conn.close()
+
+    run_migrations(str(isolated_db), str(mig_dir))
+    [backup] = backups(isolated_db)
+    assert sha256(isolated_db) != sha256(backup)
+
+    restore_backup(backup, str(isolated_db))
+    assert sha256(isolated_db) == sha256(backup)
+    assert "note" not in columns(isolated_db, "events")
+
+
+def test_defaults_to_configured_db(isolated_db, mig_dir):
+    # conftest points database.DB_PATH at the temporary DB
+    assert database.DB_PATH == str(isolated_db)
+    assert run_migrations(migrations_dir=str(mig_dir)) == [1, 2]
