@@ -12,7 +12,7 @@ from backend.app.db.migrate import (
     restore_backup,
     run_migrations,
 )
-from backend.tests.conftest import COMMITTED_DB
+from backend.tests.conftest import COMMITTED_DB, LEGACY_DB
 
 
 def sha256(path):
@@ -69,11 +69,26 @@ def test_shipped_migrations_are_well_formed():
         assert name.endswith((".sql", ".py"))
 
 
-def test_shipped_migrations_apply_to_committed_db_copy(tmp_path):
-    copy = tmp_path / "committed_copy.db"
-    shutil.copyfile(COMMITTED_DB, copy)
+def test_shipped_migrations_apply_to_legacy_db_copy(tmp_path):
+    copy = tmp_path / "legacy_copy.db"
+    shutil.copyfile(LEGACY_DB, copy)
     applied = run_migrations(str(copy))
     assert applied == [v for v, _, _ in discover_migrations()]
+    assert run_migrations(str(copy)) == []
+    conn = sqlite3.connect(copy)
+    assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+    conn.close()
+
+
+def test_committed_db_copy_migrates_to_latest(tmp_path):
+    # The committed DB has had 0001-0011 applied (A9); later migrations apply at startup
+    copy = tmp_path / "committed_copy.db"
+    shutil.copyfile(COMMITTED_DB, copy)
+    shipped = [v for v, _, _ in discover_migrations()]
+    already = versions(copy)
+    assert already[:11] == list(range(1, 12))
+    assert run_migrations(str(copy)) == [v for v in shipped if v not in already]
+    assert versions(copy) == shipped
     assert run_migrations(str(copy)) == []
     conn = sqlite3.connect(copy)
     assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
@@ -115,9 +130,9 @@ def test_nothing_pending_writes_nothing(raw_db, tmp_path):
     assert backups(raw_db) == []
 
 
-def test_copy_of_committed_db_migrates(tmp_path, mig_dir):
-    copy = tmp_path / "committed_copy.db"
-    shutil.copyfile(COMMITTED_DB, copy)
+def test_copy_of_legacy_db_migrates(tmp_path, mig_dir):
+    copy = tmp_path / "legacy_copy.db"
+    shutil.copyfile(LEGACY_DB, copy)
     conn = sqlite3.connect(copy)
     counts = {t: conn.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
               for t in ("events", "event_analysis", "gdacs_enrichment")}

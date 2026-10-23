@@ -1,6 +1,7 @@
 """
-Backfills B1-B6, run against a copy of the committed database. The committed
-file itself is never migrated by tests (conftest checks its hash).
+Backfills B1-B6, run against a copy of the committed database as it was before
+A9 applied them (tests/fixtures/legacy_baseline.db). The committed file itself
+is never migrated by tests (conftest checks its hash).
 """
 import glob
 import hashlib
@@ -12,7 +13,7 @@ import pytest
 
 from backend.app.db import database
 from backend.app.db.migrate import MIGRATIONS_DIR, discover_migrations, restore_backup, run_migrations
-from backend.tests.conftest import COMMITTED_DB
+from backend.tests.conftest import LEGACY_DB
 
 
 def sha256(path):
@@ -34,7 +35,7 @@ def scalar(db, sql, args=()):
 @pytest.fixture
 def committed_copy(tmp_path):
     copy = tmp_path / "committed_copy.db"
-    shutil.copyfile(COMMITTED_DB, copy)
+    shutil.copyfile(LEGACY_DB, copy)
     return copy
 
 
@@ -134,7 +135,7 @@ def test_b5_recomputes_stale_summary(tmp_path):
     early = tmp_path / "early"
     early.mkdir()
     for version, name, path in discover_migrations():
-        if version <= 5:
+        if not 6 <= version <= 11:  # every migration except the backfills
             shutil.copy(path, early / name)
     db = tmp_path / "db.sqlite"
     database_path = str(db)
@@ -161,7 +162,7 @@ async def test_backfills_leave_new_rows_alone(pipeline, tmp_path, monkeypatch):
     early = tmp_path / "early"
     early.mkdir()
     for version, name, path in discover_migrations():
-        if version <= 5:
+        if not 6 <= version <= 11:  # every migration except the backfills
             shutil.copy(path, early / name)
     db = tmp_path / "db.sqlite"
     monkeypatch.setattr(database, "DB_PATH", str(db))

@@ -12,6 +12,8 @@ venv/
 # Database and Models
 *.db
 *.db.bak-*
+# Pre-migration copy of the committed DB, used by the backfill tests
+!backend/tests/fixtures/legacy_baseline.db
 *.pkl
 
 # Node/React

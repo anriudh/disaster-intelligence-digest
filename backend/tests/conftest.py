@@ -9,6 +9,9 @@ import pytest
 from backend.app.db import database
 
 COMMITTED_DB = os.path.abspath(database.DB_PATH)
+# The committed DB as it was before any migration (sha256 0f9df649...), kept so
+# backfills and the runner can still be tested against real legacy rows
+LEGACY_DB = os.path.join(os.path.dirname(__file__), "fixtures", "legacy_baseline.db")
 
 
 def _install_nlp_stand_ins():
@@ -54,10 +57,11 @@ def isolated_db(tmp_path, monkeypatch):
 
 @pytest.fixture(scope="session", autouse=True)
 def committed_db_untouched():
-    """Fail the run if any test modified the committed database file."""
-    before = _sha256(COMMITTED_DB)
+    """Fail the run if any test modified the committed database or the legacy fixture."""
+    before = {path: _sha256(path) for path in (COMMITTED_DB, LEGACY_DB)}
     yield
-    assert _sha256(COMMITTED_DB) == before, f"{COMMITTED_DB} was modified by the test run"
+    for path, digest in before.items():
+        assert _sha256(path) == digest, f"{path} was modified by the test run"
 
 
 @pytest.fixture
