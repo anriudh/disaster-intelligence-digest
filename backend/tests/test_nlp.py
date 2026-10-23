@@ -1,6 +1,13 @@
 import pytest
+
+pytest.importorskip("spacy")
+pytest.importorskip("keybert")
+pytest.importorskip("sentence_transformers")
+
 from backend.app.pipeline.nlp import extract_entities, extract_signals, extract_keyphrases
 from backend.app.pipeline.embeddings import get_embeddings
+
+pytestmark = pytest.mark.model
 
 def test_spacy_ner():
     text = "A large wildfire is burning near Flagstaff, Arizona, managed by the US Forest Service."

@@ -26,8 +26,8 @@ These are records of the audit of baseline commit `814f90b`, and of the plans fo
 ## Stage status
 | Stage | Commit | Result |
 |---|---|---|
-| Records preserved | (this commit) | done |
-| A0 test isolation | | pending |
+| Records preserved | c49456a | done |
+| A0 test isolation | (this commit) | done: plain `pytest` passes offline (8 passed, 2 skipped); model tests 2/2 in the audit ML venv; committed DB and pkl hashes unchanged |
 | A1 migration framework | | pending |
 | A2 SHAP fix | | pending |
 | A4 extraction quality | | pending |
