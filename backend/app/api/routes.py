@@ -1,25 +1,31 @@
 from fastapi import APIRouter, Request, HTTPException
 from backend.app.db.database import get_db
 from backend.app.pipeline.orchestrator import run_pipeline
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 import json
 import asyncio
 
 router = APIRouter()
 
+# Open events missing from the feed stay listed this long after they were last seen
+UNOBSERVED_LISTING_DAYS = 30
+
 @router.get("/events")
 async def get_events():
     conn = get_db()
     cursor = conn.cursor()
-    # Join events with event_analysis to get severity_label
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=UNOBSERVED_LISTING_DAYS)).isoformat(timespec="seconds")
+    # Join events with event_analysis to get severity_label.
+    # 'null' is how digests that were never generated used to be stored.
     query = """
         SELECT e.*, a.severity_label, a.severity_score, 
-               (a.gemini_digest IS NOT NULL) as has_digest
+               (a.gemini_digest IS NOT NULL AND a.gemini_digest != 'null') as has_digest
         FROM events e
         LEFT JOIN event_analysis a ON e.id = a.event_id
         WHERE e.status = 'open'
+          AND (e.observation_state IS NOT 'not_observed' OR e.last_seen >= ?)
     """
-    cursor.execute(query)
+    cursor.execute(query, (cutoff,))
     rows = cursor.fetchall()
     conn.close()
     

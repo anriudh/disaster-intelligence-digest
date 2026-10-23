@@ -1,7 +1,7 @@
 import math
 import httpx
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from gdacs.api import GDACSAPIReader
 
 # EONET Category to GDACS Type Mapping
@@ -30,6 +30,39 @@ def haversine(lat1, lon1, lat2, lon2):
     c = 2 * math.asin(math.sqrt(a)) 
     r = 6371 # Radius of earth in kilometers. Use 3956 for miles
     return c * r
+
+def parse_date(value: str) -> datetime:
+    """Parses an ISO date; dates without a timezone are taken as UTC."""
+    value = value.replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError:
+        parsed = datetime.strptime(value[:19], "%Y-%m-%dT%H:%M:%S")
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+def point_of(geometry: dict):
+    """
+    Returns (lat, lon) for a GeoJSON Point, or the mean of the outer ring's
+    vertices for a Polygon.
+    """
+    coords = geometry["coordinates"]
+    if geometry.get("type") == "Polygon":
+        ring = coords[0]
+        if len(ring) > 1 and ring[0] == ring[-1]:
+            ring = ring[:-1]
+        return sum(p[1] for p in ring) / len(ring), sum(p[0] for p in ring) / len(ring)
+    return coords[1], coords[0]
+
+def event_timeline(eonet_event: dict):
+    """
+    Returns (first_seen, last_updated, latest_geometry) for an EONET event,
+    independent of the order its geometry points are listed in.
+    """
+    points = [g for g in eonet_event.get("geometry") or [] if g.get("date")]
+    if not points:
+        raise ValueError(f"Event {eonet_event.get('id')} has no dated geometry")
+    ordered = sorted(points, key=lambda g: parse_date(g["date"]))
+    return ordered[0]["date"], ordered[-1]["date"], ordered[-1]
 
 async def fetch_eonet_events(limit=100):
     url = f"https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit={limit}"
