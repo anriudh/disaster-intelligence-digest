@@ -167,6 +167,10 @@ def mark_unobserved(cursor, seen_ids, now: str):
         list(seen_ids)
     )
 
+# Schedule (used by main.py and by the health check's freshness thresholds)
+PIPELINE_INTERVAL_MINUTES = 20
+MISFIRE_GRACE_SECONDS = 300
+
 # One run at a time, shared by the scheduler and the manual trigger. The app runs
 # a single process (render.yaml), so an in-process flag is enough; several
 # workers would need a lock in the database instead.
@@ -220,30 +224,70 @@ def start_pipeline_task():
 async def _execute_run():
     """
     Orchestrates the full pipeline: Ingest -> Scrape -> NLP -> Score -> Gemini -> SQLite
+
+    A failing event is rolled back and counted, and the run continues. Returns
+    True when the run completed (status success or partial), False when it
+    failed as a whole. Every run is recorded in pipeline_runs.
     """
     logger.info("Starting pipeline run...")
+    counts = {"processed": 0, "skipped": 0, "failed": 0}
+    last_error = None
+    conn = None
+    run_id = None
 
     try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO pipeline_runs (started_at, status) VALUES (?, 'running')", (utc_now(),)
+        )
+        run_id = cursor.lastrowid
+        conn.commit()
+
         # 1. Ingest
         ingested_events = await run_ingestion()
         logger.info(f"Ingested {len(ingested_events)} events.")
-
-        conn = get_db()
-        cursor = conn.cursor()
         now = utc_now()
-
+        
         for item in ingested_events:
-            await process_event(cursor, item["eonet"], item["gdacs"], now)
-            conn.commit()
+            event_id = item["eonet"].get("id")
+            try:
+                outcome = await process_event(cursor, item["eonet"], item["gdacs"], now)
+                conn.commit()
+                counts[outcome] += 1
+            except Exception as e:
+                conn.rollback()
+                counts["failed"] += 1
+                last_error = (event_id, f"{type(e).__name__}: {e}", utc_now())
+                logger.exception(f"Event {event_id} failed; continuing with the next event")
 
         mark_unobserved(cursor, [item["eonet"]["id"] for item in ingested_events], now)
-        conn.commit()
-        conn.close()
-        logger.info("Pipeline run completed successfully.")
+        status = "partial" if counts["failed"] else "success"
+        _finish_run(conn, run_id, status, counts, last_error)
+        logger.info(f"Pipeline run finished ({status}): {counts}")
         return True
     except Exception as e:
-        logger.error(f"Pipeline run failed: {e}")
+        logger.exception(f"Pipeline run failed: {e}")
+        if conn is not None and run_id is not None:
+            try:
+                conn.rollback()
+                _finish_run(conn, run_id, "failed", counts, (None, f"{type(e).__name__}: {e}", utc_now()))
+            except Exception:
+                logger.exception("Could not record the failed run")
         return False
+    finally:
+        if conn is not None:
+            conn.close()
+
+def _finish_run(conn, run_id, status, counts, error):
+    event_id, message, at = error or (None, None, None)
+    conn.execute(
+        "UPDATE pipeline_runs SET finished_at = ?, status = ?, processed = ?, skipped = ?, failed = ?, "
+        "error_message = ?, error_event_id = ?, error_at = ? WHERE id = ?",
+        (utc_now(), status, counts["processed"], counts["skipped"], counts["failed"],
+         message, event_id, at, run_id)
+    )
+    conn.commit()
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)

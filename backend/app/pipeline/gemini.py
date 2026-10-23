@@ -90,6 +90,8 @@ async def generate_digest(event_data: dict):
     No markdown. No preamble. JSON only.
     """
 
+    # Every attempt counts against the quota, whether or not it yields a digest
+    increment_quota()
     try:
         response = client.models.generate_content(
             model="gemini-2.5-flash",
@@ -105,7 +107,6 @@ async def generate_digest(event_data: dict):
             text = text.split("```")[1].split("```")[0]
         
         digest = json.loads(text.strip())
-        increment_quota()
         return digest
     except Exception as e:
         logger.error(f"Error generating Gemini digest: {e}")

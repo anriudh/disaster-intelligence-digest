@@ -60,3 +60,21 @@ def test_match_events():
     
     no_match = match_events(eonet_event, [g2, g3, g4])
     assert no_match is None
+
+
+async def test_run_ingestion_survives_malformed_event(monkeypatch):
+    from backend.app.pipeline import ingest
+
+    good = {"id": "EONET_1", "categories": [{"title": "Wildfires"}], "sources": [],
+            "geometry": [{"date": "2024-06-01T12:00:00Z", "type": "Point", "coordinates": [-110.0, 32.0]}]}
+    bad = {"id": "EONET_BAD", "categories": [{"title": "Wildfires"}], "sources": [], "geometry": []}
+
+    async def fake_fetch(limit=100):
+        return [bad, good]
+
+    monkeypatch.setattr(ingest, "fetch_eonet_events", fake_fetch)
+    monkeypatch.setattr(ingest, "get_gdacs_events", lambda: [gdacs_feature("WF", 32.1, -110.1, "2024-06-01T10:00:00Z")])
+    results = await ingest.run_ingestion()
+    assert [r["eonet"]["id"] for r in results] == ["EONET_BAD", "EONET_1"]
+    assert results[0]["gdacs"] is None
+    assert results[1]["gdacs"] is not None

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Request, HTTPException
+from fastapi.responses import JSONResponse
 from backend.app.api.limits import limiter, READ_LIMIT, TRIGGER_LIMIT, require_pipeline_token
 from backend.app.db.database import get_db
-from backend.app.pipeline.orchestrator import start_pipeline_task
+from backend.app.pipeline.orchestrator import start_pipeline_task, PIPELINE_INTERVAL_MINUTES, MISFIRE_GRACE_SECONDS
 from datetime import date, datetime, timedelta, timezone
 import json
 
@@ -94,26 +95,86 @@ async def get_trends(request: Request):
         "severity_status": SEVERITY_STATUS
     }
 
+# Freshness thresholds from the schedule: no run has completed yet while the
+# first scheduled run is still due, and data is stale after two missed runs.
+PENDING_WINDOW = timedelta(minutes=PIPELINE_INTERVAL_MINUTES, seconds=MISFIRE_GRACE_SECONDS)
+STALE_AFTER = timedelta(minutes=2 * PIPELINE_INTERVAL_MINUTES, seconds=MISFIRE_GRACE_SECONDS)
+# Second precision, like the run timestamps it is compared with
+PROCESS_STARTED_AT = datetime.now(timezone.utc).replace(microsecond=0)
+
+def pipeline_status(last_finished, last_completed, completed_since_start, now, started_at):
+    """
+    Returns (status, reason) from pipeline_runs rows:
+    last_finished is the latest finished run, last_completed the latest
+    success or partial run. completed_since_start says whether this process
+    has completed a run yet.
+    """
+    if not completed_since_start and now - started_at < PENDING_WINDOW:
+        if last_finished is None or last_finished["status"] != "failed":
+            return "pending", "waiting for the first scheduled run"
+    if last_completed is None:
+        return "degraded", "no pipeline run has completed"
+    if last_finished["status"] == "failed":
+        return "degraded", "the last pipeline run failed"
+    if last_finished["status"] == "partial":
+        return "degraded", "events failed in the last pipeline run"
+    if now - datetime.fromisoformat(last_completed["finished_at"]) > STALE_AFTER:
+        return "degraded", "no pipeline run has completed recently"
+    return "ok", None
+
+@router.get("/health/live")
+async def liveness():
+    """The process is up. Does not touch the database."""
+    return {"status": "alive"}
+
 @router.get("/health")
 async def health():
-    conn = get_db()
-    cursor = conn.cursor()
-    
-    # Get last pipeline run (analysed_at from event_analysis)
-    cursor.execute("SELECT MAX(analysed_at) FROM event_analysis")
-    last_run = cursor.fetchone()[0]
-    
-    # Get gemini calls today
-    today = date.today().isoformat()
-    cursor.execute("SELECT call_count FROM gemini_calls WHERE call_date = ?", (today,))
-    gemini_count = cursor.fetchone()
-    gemini_count = gemini_count[0] if gemini_count else 0
-    
-    conn.close()
-    
+    now = datetime.now(timezone.utc)
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT * FROM pipeline_runs WHERE status != 'running' ORDER BY started_at DESC, id DESC LIMIT 1"
+        )
+        last_finished = cursor.fetchone()
+        cursor.execute(
+            "SELECT * FROM pipeline_runs WHERE status IN ('success', 'partial') ORDER BY started_at DESC, id DESC LIMIT 1"
+        )
+        last_completed = cursor.fetchone()
+        cursor.execute("SELECT * FROM pipeline_runs ORDER BY started_at DESC, id DESC LIMIT 1")
+        last_run = cursor.fetchone()
+
+        # Get gemini calls today
+        today = date.today().isoformat()
+        cursor.execute("SELECT call_count FROM gemini_calls WHERE call_date = ?", (today,))
+        gemini_count = cursor.fetchone()
+        gemini_count = gemini_count[0] if gemini_count else 0
+        conn.close()
+    except Exception as e:
+        return JSONResponse(status_code=503, content={"status": "degraded", "reason": f"database unavailable: {e}"})
+
+    completed_since_start = (
+        last_completed is not None
+        and datetime.fromisoformat(last_completed["started_at"]) >= PROCESS_STARTED_AT
+    )
+    status, reason = pipeline_status(last_finished, last_completed, completed_since_start, now, PROCESS_STARTED_AT)
+    last_error = None
+    if last_finished is not None and last_finished["error_message"]:
+        last_error = {
+            "at": last_finished["error_at"],
+            "message": last_finished["error_message"],
+            "event_id": last_finished["error_event_id"],
+        }
     return {
-        "status": "healthy",
-        "last_pipeline_run": last_run,
+        "status": status,
+        "reason": reason,
+        "last_run_started": last_run["started_at"] if last_run else None,
+        "last_run_finished": last_finished["finished_at"] if last_finished else None,
+        "last_run_status": last_finished["status"] if last_finished else None,
+        "last_successful_run": last_completed["finished_at"] if last_completed else None,
+        "last_error": last_error,
+        "counts": {k: last_finished[k] for k in ("processed", "skipped", "failed")} if last_finished else None,
+        "stale_after_minutes": int(STALE_AFTER.total_seconds() // 60),
         "gemini_calls_today": gemini_count
     }
 

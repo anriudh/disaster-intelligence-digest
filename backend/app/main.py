@@ -8,7 +8,7 @@ from slowapi.errors import RateLimitExceeded
 from backend.app.api.limits import limiter
 from backend.app.api.routes import router
 from backend.app.db.migrate import init_db
-from backend.app.pipeline.orchestrator import run_pipeline
+from backend.app.pipeline.orchestrator import run_pipeline, PIPELINE_INTERVAL_MINUTES, MISFIRE_GRACE_SECONDS
 from backend.app.pipeline.scorer import load_models
 import logging
 
@@ -40,14 +40,14 @@ async def startup():
     init_db()
     load_models()
     
-    # Schedule pipeline to run every 20 minutes
+    # Schedule pipeline to run every PIPELINE_INTERVAL_MINUTES
     scheduler.add_job(
         run_pipeline,
-        trigger=IntervalTrigger(minutes=20),
+        trigger=IntervalTrigger(minutes=PIPELINE_INTERVAL_MINUTES),
         id="main_pipeline",
         max_instances=1,
         coalesce=True,
-        misfire_grace_time=300
+        misfire_grace_time=MISFIRE_GRACE_SECONDS
     )
     scheduler.start()
     logger.info("Scheduler started.")

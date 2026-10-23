@@ -97,15 +97,10 @@ def match_events(eonet_event, gdacs_events):
     if not gdacs_type:
         return None
     
-    eonet_geo = eonet_event["geometry"][0]
-    eonet_lat = eonet_geo["coordinates"][1]
-    eonet_lon = eonet_geo["coordinates"][0]
-    eonet_date_str = eonet_geo["date"].replace("Z", "+00:00")
-    try:
-        eonet_date = datetime.fromisoformat(eonet_date_str)
-    except ValueError:
-        # Handle cases where EONET might return a different format
-        eonet_date = datetime.strptime(eonet_date_str[:19], "%Y-%m-%dT%H:%M:%S")
+    # Compare against the event's latest observation; polygons use their centre
+    _, eonet_date_str, latest = event_timeline(eonet_event)
+    eonet_lat, eonet_lon = point_of(latest)
+    eonet_date = parse_date(eonet_date_str)
     
     for g_event in gdacs_events:
         props = g_event.get("properties", {})
@@ -113,23 +108,23 @@ def match_events(eonet_event, gdacs_events):
         if props.get("eventtype") != gdacs_type:
             continue
             
-        # Check distance
-        geom = g_event.get("geometry", {})
-        coords = geom.get("coordinates", [0, 0])
-        g_lon, g_lat = coords[0], coords[1]
-        distance = haversine(eonet_lat, eonet_lon, g_lat, g_lon)
-        
-        if distance > 100:
-            continue
-            
-        # Check date overlap (within 3 days)
-        g_date_str = props.get("fromdate", "").replace("Z", "+00:00")
-        if not g_date_str:
-            continue
         try:
-            g_date = datetime.fromisoformat(g_date_str)
-        except ValueError:
-            g_date = datetime.strptime(g_date_str[:19], "%Y-%m-%dT%H:%M:%S")
+            # Check distance
+            geom = g_event.get("geometry") or {}
+            g_lat, g_lon = point_of(geom)
+            distance = haversine(eonet_lat, eonet_lon, g_lat, g_lon)
+
+            if distance > 100:
+                continue
+
+            # Check date overlap (within 3 days); dates without a timezone are UTC
+            g_date_str = props.get("fromdate") or ""
+            if not g_date_str:
+                continue
+            g_date = parse_date(g_date_str)
+        except (KeyError, IndexError, TypeError, ValueError) as e:
+            print(f"Skipping malformed GDACS event {props.get('eventid')}: {e}")
+            continue
             
         if abs((eonet_date - g_date).days) <= 3:
             return g_event
@@ -142,7 +137,12 @@ async def run_ingestion():
     
     results = []
     for e_event in eonet_events:
-        matched = match_events(e_event, gdacs_events)
+        try:
+            matched = match_events(e_event, gdacs_events)
+        except (KeyError, IndexError, TypeError, ValueError) as e:
+            # Left for the orchestrator to process (and report) on its own
+            print(f"Could not match {e_event.get('id')} against GDACS: {e}")
+            matched = None
         results.append({
             "eonet": e_event,
             "gdacs": matched

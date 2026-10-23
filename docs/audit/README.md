@@ -34,7 +34,7 @@ These are records of the audit of baseline commit `814f90b`, and of the plans fo
 | A5 lifecycle | f915952 | done: 12 lifecycle tests through run_pipeline (10 fail on the old code): date order, reprocessing, source-only closure, not_observed + 30-day listing, NULL digests, digest preservation, nlp_summary refresh, polygon centre |
 | P-2 explicit GDACS missingness | d43fd6e | done: unmatched events give None (not -1) to the scorer, imputed features recorded, gdacs_match_status stored; 17-feature contract unchanged |
 | A3 severity withholding (backend) | f4fea7a | done: /events, /events/{id} and /trends serve no severity, score, SHAP or severity_rationale, and add severity_status; values still stored; digests paused unless DIGEST_GENERATION_ENABLED=true. UI part deferred |
-| A6 trigger | (this commit) | done: no token 503, bad token 401, good token 202, 409 during a run, scheduler skips during a manual run, 3/hour trigger (failed attempts count) and 120/min reads give 429, token-protected diagnostics endpoint |
-| A7 isolation and health | | pending |
+| A6 trigger | ee26444 | done: no token 503, bad token 401, good token 202, 409 during a run, scheduler skips during a manual run, 3/hour trigger (failed attempts count) and 120/min reads give 429, token-protected diagnostics endpoint |
+| A7 isolation and health | (this commit) | done: a bad event is rolled back and counted while the rest are saved; runs recorded in pipeline_runs; /api/health/live without DB; /api/health pending/ok/degraded (25/45 min) with injected clock; polygon and naive-date GDACS matching; quota counts every attempt (3 of 3) |
 | A8 startup and pins | | pending |
 | A9 backfills (tested on copies) | | pending |
