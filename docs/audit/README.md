@@ -11,6 +11,7 @@ These are records of the audit of baseline commit `814f90b`, and of the plans fo
 | `A9_DRY_RUN.md` | What applying the migrations and backfills to the committed DB would change, from a dry run on a copy |
 | `IMPLEMENTATION_PLAN_REVIEW.md` | Amendments A–D to the owner's revised plan, which is the plan in force |
 | `evidence/tier{0,1,2}/` | Raw outputs: tier JSON, pytest logs, pip freezes, integrity hashes |
+| `evidence/tier3/` | Tier 3 summary only (raw responses and HTML kept outside the repository) |
 | `harness/tier{0,1,2}/` | The scripts used to run the audit checks offline, outside the repository |
 
 ## Decisions (2026-10-23)
@@ -40,3 +41,4 @@ These are records of the audit of baseline commit `814f90b`, and of the plans fo
 | A9 applied to committed DB | (this commit) | done with owner approval: migrations 0001–0011 applied with the runner (verified backup first, network off); integrity ok; row counts unchanged; per-backfill changes match A9_DRY_RUN.md; rerun is a no-op. sha256 0f9df649…a7c5c6 → 1994d536…76c2d. Rollback: restore the pre-A9 file from git (c723444) |
 | Tests on the legacy fixture | 7cfe1ea | after A9, 3 tests that copied the committed DB as legacy data failed (pushed in 315ba36 without a test run). They now use tests/fixtures/legacy_baseline.db (the pre-A9 DB); a new test migrates the committed DB to the latest version |
 | A10 stale-event lookup | (this commit) | done, provisional: unseen_runs counts consecutive completed runs without the event (failed runs don't count); after 3, up to STALE_LOOKUP_LIMIT (default 5) lookups per run, least recently looked up first; a closed record closes the event (closure_source=eonet_lookup); an open record or a failed lookup leaves it open and not_observed; nothing is deleted. 11 tests with mocked lookups. N=5 and S=30 days are provisional until T3-3 runs. Offline suite: 112 passed (test_nlp: 3 fail, models not downloaded) |
+| Tier 3 live sample | (this commit) | done: 13 external calls (cap 13), analysed offline. T3-1: 10/10 sampled sources unextractable (IRWIN JS shells rejected by the A4 gate; JTWC binary or 403), only 2 domains in the sample; multi-point geometry all ascending. T3-3: limit=100 misses 7,095 of 7,194 open allowed-category events, none updated within 30 days; 42 events within 30 days. T3-2: fromdate is naive (read as UTC); 1 match of 99, a coverage gap between the feeds, not a parsing defect. See evidence/tier3/SUMMARY.md |

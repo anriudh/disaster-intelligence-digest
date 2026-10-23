@@ -1,0 +1,225 @@
+{
+ "fetch_calls": 13,
+ "t3_1_extraction": {
+  "sampled": 10,
+  "outcomes": {
+   "boilerplate": 5,
+   "extract_none": 3,
+   "http_error": 2
+  },
+  "unextractable_share": 1.0,
+  "by_domain": {
+   "irwin.doi.gov": {
+    "boilerplate": 5
+   },
+   "www.metoc.navy.mil": {
+    "extract_none": 3,
+    "http_error": 2
+   }
+  },
+  "rows": [
+   {
+    "category": "Wildfires",
+    "domain": "irwin.doi.gov",
+    "status": 200,
+    "content_type": "text/html",
+    "outcome": "boilerplate",
+    "chars": 46
+   },
+   {
+    "category": "Severe Storms",
+    "domain": "www.metoc.navy.mil",
+    "status": 200,
+    "content_type": "binary/octet-stream",
+    "outcome": "extract_none",
+    "chars": 0
+   },
+   {
+    "category": "Wildfires",
+    "domain": "irwin.doi.gov",
+    "status": 200,
+    "content_type": "text/html",
+    "outcome": "boilerplate",
+    "chars": 46
+   },
+   {
+    "category": "Severe Storms",
+    "domain": "www.metoc.navy.mil",
+    "status": 200,
+    "content_type": "binary/octet-stream",
+    "outcome": "extract_none",
+    "chars": 0
+   },
+   {
+    "category": "Wildfires",
+    "domain": "irwin.doi.gov",
+    "status": 200,
+    "content_type": "text/html",
+    "outcome": "boilerplate",
+    "chars": 46
+   },
+   {
+    "category": "Severe Storms",
+    "domain": "www.metoc.navy.mil",
+    "status": 403,
+    "content_type": "application/xml",
+    "outcome": "http_error"
+   },
+   {
+    "category": "Wildfires",
+    "domain": "irwin.doi.gov",
+    "status": 200,
+    "content_type": "text/html",
+    "outcome": "boilerplate",
+    "chars": 46
+   },
+   {
+    "category": "Severe Storms",
+    "domain": "www.metoc.navy.mil",
+    "status": 200,
+    "content_type": "binary/octet-stream",
+    "outcome": "extract_none",
+    "chars": 0
+   },
+   {
+    "category": "Wildfires",
+    "domain": "irwin.doi.gov",
+    "status": 200,
+    "content_type": "text/html",
+    "outcome": "boilerplate",
+    "chars": 46
+   },
+   {
+    "category": "Severe Storms",
+    "domain": "www.metoc.navy.mil",
+    "status": 403,
+    "content_type": "application/xml",
+    "outcome": "http_error"
+   }
+  ]
+ },
+ "t3_1_geometry_order": {
+  "open_limit100": {
+   "order": {
+    "single": 95,
+    "ascending": 5
+   },
+   "geometry_types": {
+    "Point": 188
+   }
+  },
+  "category_get": {
+   "order": {
+    "single": 7189,
+    "ascending": 5
+   },
+   "geometry_types": {
+    "Point": 7282
+   }
+  }
+ },
+ "t3_3_truncation": {
+  "limit100_total": 100,
+  "limit100_allowed": 99,
+  "limit100_by_category": {
+   "Wildfires": 94,
+   "Severe Storms": 5
+  },
+  "category_get_total": 7194,
+  "category_get_by_category": {
+   "Wildfires": 7157,
+   "Severe Storms": 5,
+   "Volcanoes": 32
+  },
+  "limit100_ids_absent_from_category_get": 0,
+  "missing_from_limit100": 7095,
+  "missing_by_category": {
+   "Wildfires": 7063,
+   "Volcanoes": 32
+  },
+  "limit100_last_update_age_days": {
+   "min": 0,
+   "max": 57
+  },
+  "category_get_by_last_update_age": {
+   "Severe Storms": {
+    "<=7d": 5
+   },
+   "Volcanoes": {
+    "91-365d": 13,
+    ">365d": 19
+   },
+   "Wildfires": {
+    "<=7d": 6,
+    "8-30d": 31,
+    "31-90d": 216,
+    "91-365d": 1327,
+    ">365d": 5577
+   }
+  },
+  "missing_updated_within_30d": 0
+ },
+ "t3_2_gdacs": {
+  "features": 100,
+  "eventtype_counts": {
+   "EQ": 14,
+   "TC": 1,
+   "WF": 85
+  },
+  "fromdate_format": {
+   "naive": 100
+  },
+  "fromdate_examples": [
+   "2026-10-23T17:06:25",
+   "2026-10-23T16:07:51",
+   "2026-10-23T15:32:13"
+  ],
+  "parse_date_ok": true,
+  "match_limit100_allowed": {
+   "events": 99,
+   "matched": 1,
+   "errors": 0,
+   "unmatched_reasons": {
+    "nearest_over_100km": 98
+   }
+  },
+  "match_category_get": {
+   "events": 7194,
+   "matched": 1,
+   "errors": 0,
+   "unmatched_reasons": {
+    "nearest_over_100km": 6921,
+    "no_gdacs_event_of_type": 32,
+    "within_100km_but_over_3_days": 240
+   }
+  },
+  "gdacs_wf_within_100km_of_any_open_wildfire": "66/85",
+  "coverage": {
+   "limit100_source_ids": {
+    "IRWIN": 94,
+    "JTWC": 5,
+    "NATICE": 1
+   },
+   "category_get_wildfire_source_ids": {
+    "IRWIN": 3301,
+    "GDACS": 3855,
+    "Earthdata": 1
+   },
+   "gdacs_wf_countries": {
+    "Australia": 20,
+    "Mozambique": 13,
+    "Botswana": 5,
+    "South Sudan": 5,
+    "Burkina Faso": 3,
+    "Zimbabwe": 3
+   },
+   "gdacs_wf_fromdate_range": [
+    "2026-10-09T00:00:00",
+    "2026-10-23T00:00:00"
+   ],
+   "eonet_gdacs_sourced": 3855,
+   "eonet_gdacs_sourced_updated_within_30d": 0,
+   "eonet_gdacs_sourced_linked_to_fetched_gdacs": 0
+  }
+ }
+}
