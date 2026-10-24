@@ -14,13 +14,14 @@ from backend.tests.helpers import eonet_event, row
 async def test_dates_and_position_independent_of_order(pipeline, dates):
     coords = {"2024-06-01T00:00:00Z": (-110.0, 32.0), "2024-06-03T00:00:00Z": (-111.0, 33.0),
               "2024-06-05T00:00:00Z": (-112.0, 34.0)}
-    await pipeline.run(eonet_event(dates=dates, coords=[coords[d] for d in dates]))
+    await pipeline.run(eonet_event(dates=dates, coords=[coords[d] for d in dates], category="Severe Storms"))
 
     event = row("events", "id", "EONET_1")
     assert event["first_seen"] == "2024-06-01T00:00:00Z"
     assert event["last_updated"] == "2024-06-05T00:00:00Z"
     assert (event["lat"], event["lon"]) == (34.0, -112.0)  # the latest point
     assert pipeline.scored[0]["month"] == 6
+    assert pipeline.scored[0]["event_duration_days"] == 4.0
 
 
 async def test_new_point_triggers_reprocessing(pipeline):
@@ -129,20 +130,17 @@ async def test_polygon_uses_ring_centre(pipeline):
     event = row("events", "id", "EONET_1")
     assert (event["lat"], event["lon"]) == (31.0, -109.0)
     assert event["geometry_type"] == "Polygon"
-    assert pipeline.scored[0]["geometry_type_encoded"] == 1
 
 
 async def test_gdacs_missingness_is_explicit(pipeline):
     pipeline.gdacs["EONET_1"] = {"properties": {"eventid": 7, "alertlevel": "Orange",
                                                "alertscore": 2.5, "population": 1200}}
-    await pipeline.run(eonet_event("EONET_1"), eonet_event("EONET_2"))
+    await pipeline.run(eonet_event("EONET_1", category="Severe Storms"),
+                       eonet_event("EONET_2", category="Severe Storms"))
 
+    # GDACS is the label source, never a feature (M2 contract)
     matched, unmatched = pipeline.scored
-    assert matched["gdacs_alert_score"] == 2.5
-    assert matched["gdacs_population_exposure"] == 1200
-    # No -1 sentinels: missing values reach the scorer as None
-    assert unmatched["gdacs_alert_score"] is None
-    assert unmatched["gdacs_population_exposure"] is None
+    assert json.dumps(matched) == json.dumps(unmatched)  # NaN-safe comparison
 
     assert row("events", "id", "EONET_1")["gdacs_match_status"] == "matched"
     assert row("events", "id", "EONET_2")["gdacs_match_status"] == "no_match"
@@ -154,4 +152,3 @@ async def test_gdacs_match_without_population_stores_null(pipeline):
     pipeline.gdacs["EONET_1"] = {"properties": {"eventid": 7, "alertlevel": "Green", "alertscore": 1.0}}
     await pipeline.run(eonet_event("EONET_1"))
     assert row("gdacs_enrichment", "event_id", "EONET_1")["population_exposure"] is None
-    assert pipeline.scored[0]["gdacs_population_exposure"] is None

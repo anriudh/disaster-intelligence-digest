@@ -4,7 +4,7 @@ from backend.app.pipeline import orchestrator
 
 
 def eonet_event(event_id="EONET_1", dates=("2024-06-01T00:00:00Z",), closed=None,
-                coords=None, title="Sawmill Fire", geometry=None):
+                coords=None, title="Sawmill Fire", geometry=None, category="Wildfires"):
     """An EONET event whose geometry points are listed in the given date order."""
     if geometry is None:
         geometry = [
@@ -16,7 +16,7 @@ def eonet_event(event_id="EONET_1", dates=("2024-06-01T00:00:00Z",), closed=None
         "title": title,
         "description": None,
         "closed": closed,
-        "categories": [{"title": "Wildfires"}],
+        "categories": [{"title": category}],
         "sources": [{"url": "https://example.com"}],
         "geometry": geometry,
     }

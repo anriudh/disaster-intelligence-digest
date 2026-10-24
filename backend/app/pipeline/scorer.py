@@ -5,38 +5,41 @@ import shap
 import os
 import json
 import logging
+from backend.app.pipeline.features import FEATURE_COLUMNS
 
 logger = logging.getLogger(__name__)
 
-# Load model and imputer once at module level
+# Load the model once at module level. There is no imputer: missing features
+# reach the model as NaN (M2 contract).
 MODELS_DIR = os.path.join(os.path.dirname(__file__), "../../models")
 MODEL_PATH = os.path.join(MODELS_DIR, "severity_model.pkl")
-IMPUTER_PATH = os.path.join(MODELS_DIR, "imputer.pkl")
 
 model = None
-imputer = None
 explainer = None
 
 def load_models():
-    global model, imputer, explainer
+    global model, explainer
     if model is None:
         try:
-            model = joblib.load(MODEL_PATH)
-            imputer = joblib.load(IMPUTER_PATH)
+            loaded = joblib.load(MODEL_PATH)
+            check_feature_names(loaded)
+            model = loaded
             explainer = shap.TreeExplainer(model)
         except Exception as e:
             logger.error(f"Error loading models: {e}")
 
+def check_feature_names(candidate):
+    """Refuses a model not trained on FEATURE_COLUMNS, in this order."""
+    names = list(getattr(candidate, "feature_names_in_", []))
+    if names != FEATURE_COLUMNS:
+        raise ValueError(f"Model features {names} do not match the feature contract {FEATURE_COLUMNS}")
+
 # Labels mapping
 LABEL_MAP = {0: "LOW", 1: "MODERATE", 2: "HIGH"}
 
-FEATURE_COLUMNS = [
-    "event_category_encoded", "geometry_type_encoded", "source_count",
-    "event_duration_days", "gdacs_alert_score", "gdacs_population_exposure",
-    "acres_burned", "pct_contained", "wind_speed_mph", "storm_category",
-    "volcano_alert_encoded", "persons_affected", "casualties",
-    "ner_location_count", "ner_org_count", "month", "hemisphere"
-]
+# Returned when no prediction is made: a category that is not scored, or no usable model
+NOT_SCORED = {"severity_label": "UNKNOWN", "severity_score": 0.0, "shap_values": {},
+              "shap_status": "not_scored", "imputed_features": []}
 
 def class_contributions(shap_vals, pred_class: int):
     """
@@ -60,40 +63,41 @@ def class_contributions(shap_vals, pred_class: int):
         raise ValueError(f"Expected {len(FEATURE_COLUMNS)} SHAP values, got {len(values)}")
     return values
 
-def score_event(features_dict: dict):
+def score_event(features_dict):
     """
-    Predicts severity and returns label, score, and SHAP values.
+    Predicts severity and returns label, score, and SHAP values. features_dict
+    is None for a category that is not scored.
 
     shap_status is "ok" when shap_values holds the top 5 contributions for the
-    predicted class, "error" when they could not be computed.
+    predicted class, "error" when they could not be computed, and "not_scored"
+    when no prediction was made.
     """
+    if features_dict is None:
+        return dict(NOT_SCORED)
     load_models()
-    if model is None or imputer is None:
-        return {"severity_label": "UNKNOWN", "severity_score": 0.0, "shap_values": {}, "shap_status": "error",
-                "imputed_features": []}
+    if model is None:
+        return dict(NOT_SCORED)
 
-    # Prepare DataFrame. Missing features (absent or None) become NaN, which the
-    # imputer fills with its training medians; imputed_features records which.
+    # Prepare DataFrame. Missing features (absent, None or NaN) stay NaN and are
+    # handled natively by the model; imputed_features records which were missing
+    # (the key predates M2 and is kept to avoid a migration).
     df = pd.DataFrame([features_dict])
     # Ensure all columns exist and are in order
     for col in FEATURE_COLUMNS:
         if col not in df.columns:
             df[col] = np.nan
-    df = df[FEATURE_COLUMNS].apply(pd.to_numeric).astype(float)
-    imputed_features = [col for col in FEATURE_COLUMNS if pd.isna(df.at[0, col])]
-
-    # Impute
-    X_imputed = pd.DataFrame(imputer.transform(df), columns=FEATURE_COLUMNS)
+    X = df[FEATURE_COLUMNS].apply(pd.to_numeric).astype(float)
+    imputed_features = [col for col in FEATURE_COLUMNS if pd.isna(X.at[0, col])]
 
     # Predict
-    probs = model.predict_proba(X_imputed)[0]
+    probs = model.predict_proba(X)[0]
     pred_class = int(np.argmax(probs))
     severity_label = LABEL_MAP.get(pred_class, "UNKNOWN")
     severity_score = float(probs[pred_class])
 
     # SHAP values
     try:
-        class_shap_vals = class_contributions(explainer.shap_values(X_imputed), pred_class)
+        class_shap_vals = class_contributions(explainer.shap_values(X), pred_class)
 
         # Create dict of feature: importance and take top 5
         feat_importances = dict(zip(FEATURE_COLUMNS, [float(v) for v in class_shap_vals]))
@@ -116,9 +120,9 @@ def score_event(features_dict: dict):
 if __name__ == "__main__":
     # Test with dummy features
     dummy_features = {
-        "event_category_encoded": 0,
-        "gdacs_alert_score": 4.5,
-        "source_count": 5
+        "wind_max_mph": 120.0,
+        "source_count": 2,
+        "month": 9
     }
     result = score_event(dummy_features)
     print(json.dumps(result, indent=2))

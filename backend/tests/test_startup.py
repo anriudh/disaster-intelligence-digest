@@ -27,16 +27,18 @@ def test_readme_commands_use_module_paths():
 
 
 @pytest.mark.model
-def test_model_paths_resolve_from_any_directory(tmp_path, monkeypatch):
+def test_model_paths_resolve_from_any_directory(tmp_path, monkeypatch, caplog):
     pytest.importorskip("xgboost")
     from backend.app.pipeline import scorer
 
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(scorer, "model", None)
-    monkeypatch.setattr(scorer, "imputer", None)
     monkeypatch.setattr(scorer, "explainer", None)
     scorer.load_models()
-    assert scorer.model is not None and scorer.imputer is not None
+    # The committed pre-M2 model is found, then refused for its feature names
+    assert scorer.model is None
+    assert "do not match the feature contract" in caplog.text
+    assert "No such file" not in caplog.text
 
 
 def test_pinned_versions_match_the_model_artifacts():

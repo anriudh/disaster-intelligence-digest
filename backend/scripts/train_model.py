@@ -9,26 +9,8 @@ import os
 from gdacs.api import GDACSAPIReader
 from datetime import datetime, timedelta
 
-# Feature columns exactly as specified in GEMINI.md
-FEATURE_COLUMNS = [
-    "event_category_encoded",   # int: Wildfire=0, Storm=1, Volcano=2, Flood=3, EQ=4
-    "geometry_type_encoded",    # int: point=0, polygon=1
-    "source_count",             # int
-    "event_duration_days",      # float
-    "gdacs_alert_score",        # float, -1 if no match
-    "gdacs_population_exposure",# int, -1 if no match
-    "acres_burned",             # float, NaN if not applicable
-    "pct_contained",            # float, NaN if not applicable
-    "wind_speed_mph",           # float, NaN if not applicable
-    "storm_category",           # float, NaN if not applicable
-    "volcano_alert_encoded",    # float: Normal=0, Advisory=1, Watch=2, Warning=3
-    "persons_affected",         # float, NaN if not found
-    "casualties",               # float, NaN if not found
-    "ner_location_count",       # int
-    "ner_org_count",            # int
-    "month",                    # int: 1-12
-    "hemisphere",               # int: North=0, South=1
-]
+# The one feature list (docs/audit/M2_FEATURE_CONTRACT.md)
+from backend.app.pipeline.features import FEATURE_COLUMNS, LABEL_ENCODING
 
 CATEGORY_ENCODING = {
     "Wildfires": 0,
@@ -36,12 +18,6 @@ CATEGORY_ENCODING = {
     "Volcanoes": 2,
     "Floods": 3,
     "Earthquakes": 4
-}
-
-LABEL_ENCODING = {
-    "GREEN": 0,
-    "ORANGE": 1,
-    "RED": 2
 }
 
 def fetch_historical_data():
@@ -103,6 +79,9 @@ def fetch_historical_data():
     return pd.DataFrame(data)
 
 def train():
+    # The synthetic data below predates the M2 feature contract and must not
+    # replace the artifacts; M3 trains on real labelled storms instead.
+    raise SystemExit("Training is disabled until M3: the synthetic data does not match the M2 feature contract.")
     df = fetch_historical_data()
     
     X = df[FEATURE_COLUMNS]

@@ -3,7 +3,8 @@ from datetime import datetime, timezone
 import json
 import logging
 import os
-from backend.app.pipeline.ingest import run_ingestion, fetch_eonet_event, event_timeline, point_of, parse_date
+from backend.app.pipeline.ingest import run_ingestion, fetch_eonet_event, event_timeline, point_of
+from backend.app.pipeline.features import build_features
 from backend.app.pipeline.scraper import scrape_event_sources
 from backend.app.pipeline.nlp import run_nlp_pipeline
 from backend.app.pipeline.embeddings import get_embeddings
@@ -51,28 +52,11 @@ async def process_event(cursor, eonet: dict, gdacs, now: str) -> str:
     description = eonet.get("description") or eonet.get("title", "")
     embeddings = get_embeddings(description)
 
-    # 5. Prepare features for Scorer
-    # Mapping EONET categories to encoded values
-    from backend.scripts.train_model import CATEGORY_ENCODING
+    # 5. Prepare features for Scorer: storms only, from the EONET track (M2
+    # contract); None for other categories. GDACS and NLP output are not inputs.
     cat_name = eonet["categories"][0]["title"]
-
     gdacs_props = gdacs.get("properties", {}) if gdacs else {}
-
-    features = {
-        "event_category_encoded": CATEGORY_ENCODING.get(cat_name, 0),
-        "geometry_type_encoded": 1 if latest["type"] == "Polygon" else 0,
-        "source_count": len(eonet["sources"]),
-        "event_duration_days": 0.0, # Placeholder
-        # None when there is no GDACS match; never a -1 sentinel
-        "gdacs_alert_score": optional_number(gdacs_props.get("alertscore"), float),
-        "gdacs_population_exposure": optional_number(gdacs_props.get("population"), int),
-        "ner_location_count": len([e for e in nlp_results["entities"] if e[1] in ("GPE", "LOC")]),
-        "ner_org_count": len([e for e in nlp_results["entities"] if e[1] == "ORG"]),
-        "month": parse_date(last_updated).month,
-        "hemisphere": 0 if lat > 0 else 1
-    }
-    # Add regex signals to features
-    features.update(nlp_results["signals"])
+    features = build_features(eonet)
 
     # 6. Score
     scoring_result = score_event(features)
